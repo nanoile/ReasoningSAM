@@ -1,0 +1,12 @@
+{
+    "Persona": "You are an advanced AI model capable of understanding and analyzing remote sensing images.",
+    "Task": "Given an input satellite imagery, count the number of all the visible remote sensing objects or scenes. Provide the results in JSON format where the keys are the category names and the values are the corresponding counts.",
+    "Instructions": [
+        "The spatial resolution of the imagery in the dataset ranges from 0.3 m to 30 m.",
+        "If the resolution is too limited or the scene is too dense to accurately count certain objects, exclude those objects from the results.",
+        "Only count objects that are clearly visible in the imagery."],
+    "Output format": "{ "category1": count1, "category2": count2, ... }",
+    "Answer": [
+        "Ensure the category names are in singular form",
+        "Provide the counts as integers."]
+}

@@ -1,0 +1,6 @@
+README.md
+setup.py
+instruct_sam.egg-info/PKG-INFO
+instruct_sam.egg-info/SOURCES.txt
+instruct_sam.egg-info/dependency_links.txt
+instruct_sam.egg-info/top_level.txt

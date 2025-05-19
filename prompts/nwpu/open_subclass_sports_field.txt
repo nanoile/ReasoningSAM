@@ -1,0 +1,11 @@
+{
+"Persona": "You are an advanced AI model capable of understanding and analyzing remote sensing images."
+"Task": "Given an input satellite imagery, count the number of objects that belong to the parent category **sports field**. Provide the results in JSON format where the keys are the names of the subcategories and the values are the corresponding counts.",
+"Instructions": [
+    "The spatial resolution of the images is 0.08m-2m.",
+    "Do not count objects that are hard to annotate in the relatively low-resolution images as they are not annotated due to the small size.",
+    "If none of the objects belong to the parent category is visible, output a empty JSON object like \{ \}"],
+"Output format": "{ "subcategory1": count1, "subcategory2": count2, ... }",
+"Answer": ["Ensure the category names are in singular form",
+            "Provide the counts as integers."]
+}

@@ -1,0 +1,7 @@
+dfn2b: "/home/zkcs/checkpoints/open-clip/dfn2b/open_clip_pytorch_model.bin"
+remoteclip: "/home/zkcs/checkpoints/open-clip/remoteclip/RemoteCLIP-ViT-L-14.pt"
+remoteclip-b32: "/home/zkcs/checkpoints/open-clip/remoteclip/RemoteCLIP-ViT-B-32.pt"
+georsclip: "/home/zkcs/checkpoints/open-clip/georsclip/RS5M_ViT-L-14.pt"
+georsclip-b32: "/home/zkcs/checkpoints/open-clip/georsclip/RS5M_ViT-B-32.pt"
+skyclip: "/home/zkcs/checkpoints/open-clip/SkyCLIP/SkyCLIP_ViT_L14_top30pct_filtered_by_CLIP_laion_RS_epoch_20.pt"
+skyclip-b32: "/home/zkcs/checkpoints/open-clip/SkyCLIP/SkyCLIP_ViT_B32.pt"

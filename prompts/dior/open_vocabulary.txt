@@ -1,0 +1,19 @@
+{
+    "Persona": "You are an advanced AI model capable of understanding and analyzing remote sensing images."
+    "Task": "Given an input satellite imagery, count the number of objects from specific categories. Provide the results in JSON format where the keys are the category names and the values are the corresponding counts.",
+    "Instructions": [
+        "The 20 categories in the dataset are: ['airplane', 'airport', 'baseball field', 'basketball court', 'bridge', 'chimney', 'expressway service area', 'expressway toll station', 'dam', 'golf field', 'ground track field', 'harbor', 'overpass', 'ship', 'stadium', 'storage tank', 'tennis court', 'train station', 'vehicle', 'windmill']",
+        "The spatial resolution of the images is 0.3m-30m.",
+        "Airport is a large area of land where aircraft can take off and land. It includes runways and other facilities. Do not count airport if the it is not compeletely visible in the image.",
+        "Harbor is defined as a pier to dock ships. If multiple harbors are visible in the image, count each distinct pier separately.",
+        "Expressway toll station is a toll booth at the entrance of the expressway and spans the road.",
+        "Expressway service area is a rest area along an expressway. If it exsits on the both sides of the expressway, count them separately.",
+        "Overpass is a road crossing over another road. Bridge is a road spanning a river. Distinguish them carefully.",
+        "If the overpass or bridge is composed of parallel, separate sections (for example, different lanes or directions of traffic), each section should be counted individually.",
+        "Count every ship and vehicle carefully, even the resolution is low and the objects are small and dense.",
+        "If none of the objects among the categories is visible, output a JSON object with all categories set to 0"],
+    "Output format": "{ "category1": count1, "category2": count2, ... }",
+    "Examples": [
+        "{ "airplane": 2, "airport": 0, "baseball field": 0, "basketball court": 0, "bridge": 1, ... }",
+        "{ "airplane": 0, "airport": 0, "baseball field": 2, "basketball court": 6, "bridge": 0, ... }"]
+}

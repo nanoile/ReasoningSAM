@@ -1,0 +1,22 @@
+{
+    "airplane": 0,
+    "airport": 0,
+    "baseball field": 0,
+    "basketball court": 2,
+    "bridge": 0,
+    "chimney": 0,
+    "expressway service area": 0,
+    "expressway toll station": 0,
+    "dam": 0,
+    "golf field": 0,
+    "ground track field": 0,
+    "harbor": 0,
+    "overpass": 0,
+    "ship": 0,
+    "stadium": 0,
+    "storage tank": 0,
+    "tennis court": 2,
+    "train station": 0,
+    "vehicle": 2,
+    "windmill": 0
+}

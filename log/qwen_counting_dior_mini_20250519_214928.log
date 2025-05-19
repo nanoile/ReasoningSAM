@@ -1,0 +1,70 @@
+2025-05-19 21:49:28,917 [INFO] Prompt: {
+    "Persona": "You are an advanced AI model capable of understanding and analyzing remote sensing images.",
+    "Task": "Given an input satellite imagery, count the number of all the visible remote sensing objects or scenes. Provide the results in JSON format where the keys are the category names and the values are the corresponding counts.",
+    "Instructions": [
+        "The spatial resolution of the imagery in the dataset ranges from 0.3 m to 30 m.",
+        "If the resolution is too limited or the scene is too dense to accurately count certain objects, exclude those objects from the results.",
+        "Only count objects that are clearly visible in the imagery."],
+    "Output format": "{ "category1": count1, "category2": count2, ... }",
+    "Answer": [
+        "Ensure the category names are in singular form",
+        "Provide the counts as integers."]
+}
+Running on device: cuda:0
+2025-05-19 21:49:28,917 [INFO] Image directory: datasets/dior/JPEGImages-trainval
+Annotation path: datasets/dior/dior_mini_ann.json
+2025-05-19 21:49:28,917 [INFO] save couning dir: ./object_counts/dior_mini/Qwen_open_ended
+2025-05-19 21:49:28,917 [INFO] output process time path: ./object_counts/Qwen_dior_mini_open_ended_runtime.json
+2025-05-19 21:49:38,561 [INFO] Counting results of 09100.jpg
+2025-05-19 21:49:38,561 [INFO] 3.103038787841797s
+2025-05-19 21:49:38,561 [INFO] ```json
+{
+    "road": 1,
+    "building": 1,
+    "water_body": 1,
+    "trees": 4,
+    "grass": 1,
+    "utility_poles": 2
+}
+```
+2025-05-19 21:49:38,561 [INFO] output_token_count: 52
+2025-05-19 21:49:38,562 [INFO] pred_counts: {'road': 1, 'building': 1, 'water_body': 1, 'trees': 4, 'grass': 1, 'utility_poles': 2}
+2025-05-19 21:49:40,636 [INFO] Counting results of 06796.jpg
+2025-05-19 21:49:40,636 [INFO] 2.053671360015869s
+2025-05-19 21:49:40,636 [INFO] ```json
+{
+  "basketball court": 1,
+  "tennis courts": 2,
+  "parking lot": 1,
+  "trees": 15,
+  "paths": 4,
+  "car": 1
+}
+```
+2025-05-19 21:49:40,636 [INFO] output_token_count: 56
+2025-05-19 21:49:40,636 [INFO] pred_counts: {'basketball court': 1, 'tennis courts': 2, 'parking lot': 1, 'trees': 15, 'paths': 4, 'car': 1}
+2025-05-19 21:49:42,953 [INFO] Counting results of 09938.jpg
+2025-05-19 21:49:42,954 [INFO] 2.311694622039795s
+2025-05-19 21:49:42,954 [INFO] ```json
+{
+  "parking_spaces": 15,
+  "tennis_basketball_courts": 1,
+  "buildings": 4,
+  "trees": 16,
+  "cars": 10,
+  "grass_fields": 2
+}
+```
+2025-05-19 21:49:42,954 [INFO] output_token_count: 63
+2025-05-19 21:49:42,954 [INFO] pred_counts: {'parking_spaces': 15, 'tennis_basketball_courts': 1, 'buildings': 4, 'trees': 16, 'cars': 10, 'grass_fields': 2}
+2025-05-19 21:49:44,336 [INFO] Counting results of 06486.jpg
+2025-05-19 21:49:44,337 [INFO] 1.375117540359497s
+2025-05-19 21:49:44,337 [INFO] ```json
+{
+    "satellite_domes": 4,
+    "buildings": 2,
+    "parking_lot": 1
+}
+```
+2025-05-19 21:49:44,337 [INFO] output_token_count: 34
+2025-05-19 21:49:44,337 [INFO] pred_counts: {'satellite_domes': 4, 'buildings': 2, 'parking_lot': 1}
