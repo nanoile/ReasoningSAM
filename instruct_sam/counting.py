@@ -99,17 +99,6 @@ def encode_image_as_base64(image_path):
         return f"data:image/png;base64,{base64_string}"
 
 
-def clean_base64_image_data(encoded_image):
-    """
-    去除 Base64 数据的前缀。
-    :param encoded_image: Base64 编码的图像字符串。
-    :return: 去掉前缀的 Base64 数据。
-    """
-    if encoded_image.startswith("data:image"):
-        return encoded_image.split(",")[1]
-    return encoded_image
-
-
 def predict(text_prompt, encoded_image, top_p=1, temperature=1, model="gpt-4o-2024-11-20", json_output=False):
     if json_output:
         completion = openai.chat.completions.create(
@@ -163,11 +152,11 @@ def predict(text_prompt, encoded_image, top_p=1, temperature=1, model="gpt-4o-20
 
 def count_gt(annotations_data, img_name, lvis=False):
     """
-    统计指定图像中每个类别的目标数量。
+    Count the number of targets in each category in the specified image.
 
-    :param annotations_data: COCO格式的标注数据（包含images和annotations字段）。
-    :param img_name: 图像文件名。
-    :return: 一个字典，其中键为类别名称，值为目标数量。
+    :param annotations_data: The annotation data in COCO format (contains images and annotations fields).
+    :param img_name: The image file name.
+    :return: A dictionary, where the key is the category name and the value is the number of targets.
     """
 
     category_dict = {cat['id']: cat['name']
@@ -175,7 +164,7 @@ def count_gt(annotations_data, img_name, lvis=False):
     # ini category_counts
     category_counts = {category: 0 for category in category_dict.values()}
 
-    # 查找图像对应的image_id
+    # Find the image_id corresponding to the image
     image_id = None
     if lvis:
         image_id = int(img_name.split('.')[0])
@@ -186,10 +175,10 @@ def count_gt(annotations_data, img_name, lvis=False):
                 break
 
     if image_id is None:
-        print(f"未找到图像 {img_name} 的标注信息")
+        print(f"The annotation of {img_name} is not found")
         return category_counts
 
-    # 遍历标注数据，统计属于该图像的目标
+    # Iterate through the annotation data to count the targets in the image
     for ann in annotations_data['annotations']:
         if ann['image_id'] == image_id:
             category_name = category_dict[ann['category_id']]

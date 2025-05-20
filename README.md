@@ -1,4 +1,4 @@
-# Technical Appendix for EarthInstruct and InstructSAM
+# Technical Appendices for EarthInstruct and InstructSAM
 
 Anonymous Authors
 
@@ -18,7 +18,7 @@ InstructSAM addresses InstructCDS by decomposing them into several tractable ste
 1. Create a new conda environment.
 `python>=3.10` and `torch>=2.5.1` are recommended for compatibility with SAM2.
 ```bash
-conda create -n python=3.10 insam
+conda create -n insam python=3.10
 conda activate insam
 pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
 ```
@@ -37,6 +37,9 @@ pip install -e .
 ### Checkpoint Download
 For double-blind review, this code only references publicly available third-party resources.
 
+Download the pretrained models to the ./checkpoint directory or any preferred location.
+
+**[Important]** Please store the checkpoint path of CLIP models in [CLIP checkpoints config](checkpoints/config.yaml), so that the CLIP model can be switched to different variants by modifying the model name.
 - LVLM Counter
 
 Download [Qwen2.5-VL](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main) or use an API request in OpenAI format.
@@ -47,7 +50,7 @@ huggingface-cli download Qwen/Qwen2.5-VL-7B-Instruct \
 ```
 
 - Mask Proposer
-Download [sam2_hiera_large.pt](https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_large.pt) to the ./checkpoint directory.
+  - [sam2_hiera_large.pt](https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_large.pt)
 
 - CLIP Model
   - [DFN2B-CLIP-ViT-L-14-39B](https://huggingface.co/apple/DFN2B-CLIP-ViT-L-14-39B/resolve/main/open_clip_pytorch_model.bin?download=true)
@@ -58,21 +61,37 @@ Download [sam2_hiera_large.pt](https://dl.fbaipublicfiles.com/segment_anything_2
   - [RemoteCLIP-ViT-L-14](https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-L-14.pt?download=true)
   - [RemoteCLIP-ViT-B-32](https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt?download=true)
 
-The checkpoint path should be stored in [CLIP checkpoints](checkpoints/config.yaml), so that the CLIP model can be switched to different variants by modifying the model name.
-
 ### Dataset Preparation
-We provide a subset of DIOR with 4 images to quickly go through the entire pipeline. The detailed benchmark category split is stored in the [dataset config](datasets/config.json).
+We provide a subset of DIOR with 4 images for quickly going through the entire pipeline. The detailed benchmark category split is stored in the [dataset config](datasets/config.json).
 
 | Dataset     | Image                                                                 | Annotation                          |
 | ----------- | -------------------------------------------------------------------- | ----------------------------------- |
-| DIOR-mini   | [local](datasets/dior/JPEGImages-trainval/)                          | [dior_mini_ann.json](datasets/dior/dior_mini_ann.json) |
+| DIOR-mini   | [datasets/dior/JPEGImages-trainval](datasets/dior/JPEGImages-trainval/)                          | [dior_mini_ann.json](datasets/dior/dior_mini_ann.json) |
 | DIOR        | [Google Drive](https://drive.google.com/drive/folders/1UdlgHk49iu6WpcJ5467iT-UqNPpx__CC) | [dior_ins_val_ann.json](datasets/dior/dior_ins_val_ann.json) |
 | NWPU-VHR-10 | [One Drive](https://1drv.ms/u/s!AmgKYzARBl5cczaUNysmiFRH4eE)         | [nwpu_ins_ann.json](datasets/nwpu/nwpu_ins_ann.json) |
 
-
 ## Getting Started
+See the example notebooks for more details. After initializing pretrained models, inference can be executed clearly. See [inference_demo.ipynb](demo/inference_demo.ipynb) for more details.
+```python
+instruct_sam = InstructSAM()
+instruct_sam.count_objects(prompt, gpt_model="gpt-4o-2024-11-20", json_output=True)
+print(f'response: \n{instruct_sam.response}')
+>>> {
+>>>      "car": 23,
+>>>      "building": 5,
+>>>      "basketball_court": 2,
+>>>      "tennis_court": 1
+>>> }
+```
 
-See the example notebooks for more details.
+```
+instruct_sam.segment_anything(mask_generator, max_masks=200)
+instruct_sam.calculate_pred_text_features(model, tokenizer, use_vocab=False)
+instruct_sam.match_boxes_and_labels(model, preprocess, show_similarities=True)
+visualize_prediction(instruct_sam.img_array, instruct_sam.boxes_final,
+                     instruct_sam.labels_final, instruct_sam.segmentations_final)
+```
+![image](assets/inference_process.jpg)
 
 ## Inference
 Please prepare the metadata in COCO annotation format. For unannotated datasets, simply leave the 'annotations' field blank. Replace the configuration files for [datasets](datasets/config.json) and [CLIP checkpoints](checkpoints/config.yaml) with your local paths. These config files are used by default in the following scripts.
