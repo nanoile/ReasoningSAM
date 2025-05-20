@@ -14,14 +14,18 @@ def convert_predictions_to_coco(img_name_list, boxes_final_list, labels_final_li
                                 scores_final_list=None, annotations=None, save_path=None):
     """
     Convert predictions to COCO format for evaluation.
-    
-    :param img_name_list: List of image names (keys in annotations).
-    :param boxes_final_list: List of predicted boxes for each image.
-    :param labels_final_list: List of predicted labels for each image.
-    :param annotations: coco format annotations.
-    :return: List of predictions in COCO format.
+
+    Args:
+        img_name_list (list): List of image names (keys in annotations).
+        boxes_final_list (list): List of predicted boxes for each image.
+        labels_final_list (list): List of predicted labels for each image.
+        annotations (dict): coco format annotations.
+        save_path (str, optional): The path to save the predictions. Defaults to None.
+    Returns:
+        List of predictions in COCO format.
     """
-    category_name_to_id = {item['name']: item['id'] for item in annotations['categories']}
+    category_name_to_id = {item['name']: item['id']
+                           for item in annotations['categories']}
     # map image name to image id (name2id)
     name2id = {item['file_name']: item['id'] for item in annotations['images']}
     coco_predictions = []
@@ -30,8 +34,9 @@ def convert_predictions_to_coco(img_name_list, boxes_final_list, labels_final_li
         boxes = boxes_final_list[idx]
         labels = labels_final_list[idx]
         segmentations = segmentations_final_list[idx]
-        scores = scores_final_list[idx] if scores_final_list is not None else [1.0] * len(boxes)
-        
+        scores = scores_final_list[idx] if scores_final_list is not None else [
+            1.0] * len(boxes)
+
         for i, box in enumerate(boxes):
             x, y, w, h = box  # COCO format: [x_min, y_min, width, height]
             label = labels[i]
@@ -54,56 +59,34 @@ def convert_predictions_to_coco(img_name_list, boxes_final_list, labels_final_li
     return coco_predictions
 
 
-def filter_rp_by_threshold(rp_preds, threshold=0, mAPnc=True, coco_input=False):
-    coco_predictions = []
-    # 如果coco_input为True，则输入的是COCO格式的预测结果，否则输入的是预测结果字典
-    # 如果coco_input为True, 则过滤掉小于阈值的筛选框; 并将其他阈值设置为1    
-    if coco_input:
-        for pred in rp_preds:
-            pred_copy = copy.deepcopy(pred)
-            if pred_copy['score'] >= threshold:
-                if mAPnc:
-                    pred_copy['score'] = 1
-                coco_predictions.append(pred_copy)
-    else:
-        for img_name, preds in rp_preds.items():
-            image_id = int(img_name.split('.')[0])  # Assuming file names are like "001.jpg"
-            bboxes = preds['bboxes']
-            scores = preds['scores']
-            labels = preds['labels']
-
-            for bbox, score, label in zip(bboxes, scores, labels):
-                if score >= threshold:
-                    if mAPnc:
-                        score = 1
-                    x1, y1, width, height = bbox
-                    coco_predictions.append({
-                        "image_id": image_id,
-                        "category_id": label + 1,  # Assuming category IDs in COCO format start from 1
-                        "bbox": [x1, y1, width, height],
-                        "score": score  # Substitute with constant score for mAPnc
-                    })
-    return coco_predictions
-
-
 def get_all_counts(results):
     """
-    计算所有类别的数量
+    Aggregate the total counts for each category from the given results.
+
+    Args:
+        results (str or list):
+            - If str: Path to a directory containing JSON files with category counts.
+            - If list: List of dictionaries in COCO format, each with a 'label' key representing the category name.
+
+    Returns:
+        dict: A dictionary mapping each category name to its total count (int) aggregated across all files or items.
     """
     all_counts = defaultdict(int)
-    if isinstance(results, str):        # chatgpt counding dirctory
+    if isinstance(results, str):        # object counting directory
         for filename in os.listdir(results):
             if filename.endswith('.json'):
                 file_path = os.path.join(results, filename)
                 with open(file_path, 'r') as f:
                     data = json.load(f)
                 for category, count in data.items():
-                    # 确保count是整数
+                    # Ensure count is an integer
                     try:
-                        count_value = int(count) if isinstance(count, str) else count
+                        count_value = int(count) if isinstance(
+                            count, str) else count
                         all_counts[category] += count_value
                     except (ValueError, TypeError) as e:
-                        print(f"警告：文件 {filename} 中类别 {category} 的计数 '{count}' 不能被转换为整数。错误: {e}")
+                        print(
+                            f"Warning: The count '{count}' of category '{category}' in file '{filename}' cannot be converted to an integer. Error: {e}")
     elif isinstance(results, list):     # list, coco_raw format
         for item in results:
             label = item['label']
@@ -118,10 +101,14 @@ def get_all_counts(results):
 
 def get_cat_map(model, tokenizer, categories, all_counts, threshold=0.95):
     """
-    使用已初始化好的CLIP模型，根据给定阈值输出一个字典：
-    key: 预测到的类别
-    value: 相似度最高的NWPU类别(若相似度>=阈值)，若所有类别的相似度小于阈值则删除该预测类别。
-    
+    Map predicted categories to dataset categories based on text similarity.
+
+    Args:
+        model (torch.nn.Module): Model for text encoding
+        tokenizer (callable): Tokenizer for text encoding
+        categories (list): List of dataset category names
+        all_counts (dict): Dictionary of predicted category counts
+
     Example:
         all_counts = {}
         for img_name in img_name_list:
@@ -133,31 +120,33 @@ def get_cat_map(model, tokenizer, categories, all_counts, threshold=0.95):
                                             all_counts, threshold=0.95)
     """
     device = next(model.parameters()).device
-    # 准备NWPU类别文本
+    # sentence template for dataset categories
     nwpu_texts = [f"an image of a {cat}" for cat in categories]
     nwpu_tokens = tokenizer(nwpu_texts).to(device)
 
-    # 计算NWPU类别文本embedding
+    # calculate text embedding for dataset categories
     with torch.no_grad():
         nwpu_text_embeds = model.encode_text(nwpu_tokens)
-        nwpu_text_embeds = nwpu_text_embeds / nwpu_text_embeds.norm(dim=-1, keepdim=True)
+        nwpu_text_embeds = nwpu_text_embeds / \
+            nwpu_text_embeds.norm(dim=-1, keepdim=True)
 
-    # 预测类别
+    # sentence template for predicted categories
     predicted_cats = list(all_counts.keys())
     predicted_texts = [f"an image of a {pcat}" for pcat in predicted_cats]
     predicted_tokens = tokenizer(predicted_texts).to(device)
 
-    # 计算预测类别文本embedding
+    # calculate text embedding for predicted category
     with torch.no_grad():
         predicted_text_embeds = model.encode_text(predicted_tokens)
-        predicted_text_embeds = predicted_text_embeds / predicted_text_embeds.norm(dim=-1, keepdim=True)
+        predicted_text_embeds = predicted_text_embeds / \
+            predicted_text_embeds.norm(dim=-1, keepdim=True)
 
-    # 计算相似度矩阵 [len(predicted_cats), len(categories)]
-    # 行对应预测类别，列对应NWPU类别
+    # calculate similarity matrix [len(predicted_cats), len(categories)]
+    # row: predicted categories, column: dataset categories
     similarities = predicted_text_embeds @ nwpu_text_embeds.T
 
-    # 输出字典: 
-    # key为预测类别，value为高于threshold时最高的NWPU类别，否则该预测类别不加入结果
+    # output dictionary:
+    # key: predicted category, value: dataset category (if similarity >= threshold)
     result = {}
     for i, pred_cat in enumerate(predicted_cats):
         row = similarities[i]
@@ -167,152 +156,71 @@ def get_cat_map(model, tokenizer, categories, all_counts, threshold=0.95):
 
     return result
 
-import openai
-
-
-API_KEY = 'sk-RWrbcDyifkghniRiE1FeC79a9c1244F19063AaC7266c3dA2'
-BASE_URL = "https://api.v3.cm/v1/"      # HK线路
-BASE_URL = "https://api.aaai.vip/v1/"      # HK线路
-
-# API_KEY = 'sk-1a1f32ba0d3349f5be5d1e93fb3e1db2'
-# BASE_URL = "https://api.deepseek.com"
-
-openai.api_key = API_KEY
-openai.base_url = BASE_URL
-from instruct_sam.counting import extract_dict_from_string
-
-def create_completion(prompt, model_name, json_output=False):
-    try:
-        message = {
-            "model": model_name,
-            "max_tokens": 6000,
-            "temperature": 0,
-            "top_p": 1,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": prompt,
-                        }
-                    ],
-                }
-            ],
-        }
-        
-        if json_output:
-            message["response_format"] = {"type": "json_object"}
-        
-        print('Sending message...')
-        response = openai.chat.completions.create(**message)
-        response_content = response.choices[0].message.content
-        # print(response_content)
-        pred2cat = extract_dict_from_string(response_content)
-        if pred2cat == -1:
-            return response_content
-        return pred2cat
-            
-    except Exception as e:
-        print(f"请求发生异常: {e}")
-        return {}
 
 def convert_coco_raw_to_coco_pred(coco_results_raw, pred2cat, val_anns, det_threshold=0.0):
     """
+    Convert coco_raw format (open-ended or opoen-subclass with `label` field) to COCO format predictions
     Args:
-        coco_results_raw: list, coco_raw format
-        pred2cat: dict, predicted category map
-        val_anns: dict, coco format annotations
-        det_threshold: float, detection threshold
+        coco_results_raw (list): coco_raw format
+        pred2cat (dict): predicted category map
+        val_anns (dict): coco format annotations
+        det_threshold (float): detection threshold
     """
-    # 转换 qwen_oed_raw 为 COCO 格式的预测结果
+
     coco_predictions = []
     annotation_id = 1
 
-    # 从 val_anns 获取 categories 信息
     categories = val_anns['categories']
-    # 创建类别名称到ID的映4
     category_name_to_id = {cat['name']: cat['id'] for cat in categories}
 
     for item in coco_results_raw:
         label = item['label']
-        
-        # 如果标签不在映射字典的key里，跳过这个框
+
+        # if label not in pred2cat, skip this box
         if label not in pred2cat:
             continue
-        
+
         if item['score'] < det_threshold:
             continue
-        
-        # 获取映射后的类别
+
+        # get mapped category
         mapped_category = pred2cat[label]
-        
-        # 如果映射的类别不在数据集的类别中，跳过
+
+        # if mapped category not in dataset categories, skip
         if mapped_category not in category_name_to_id:
             continue
-        
-        # 获取类别ID
+
+        # get category id
         category_id = category_name_to_id[mapped_category]
-        
-        # 构建 COCO 格式的预测
+
         coco_pred = {
             'image_id': item['image_id'],
             'category_id': category_id,
             'bbox': item['bbox'],  # [x, y, width, height]
-            'id': annotation_id  # COCO 格式需要唯一的 ID
+            'id': annotation_id
         }
         if 'score' in item:
             coco_pred['score'] = item['score']
         else:
             coco_pred['score'] = 1
         if 'segmentation' in item:
-            coco_pred['segmentation'] = item['segmentation'] 
-        
+            coco_pred['segmentation'] = item['segmentation']
+
         coco_predictions.append(coco_pred)
         annotation_id += 1
     return coco_predictions
 
 
-# def map_final_label_to_cats(pred2cat, labels_final, boxes_final, segmentations_final):
-#     """
-#     Args:
-#         labels_final (list): a list of predicted label names (str)
-#         boxes_final (list): a list of bounding boxes
-#         segmentations_final (list): a list of segmentations
-#         pred2cat (dict): a dictionary mapping predicted labels to category labels
-
-#     Returns:
-#         tuple: updated lists of labels, boxes, and segmentations
-        
-#     Use Example:
-#         labels_final, boxes_final, segmentations_final = map_final_label_to_cats(pred2cat, labels_final, boxes_final, segmentations_final)
-#     """
-#     labels_final_copy = labels_final.copy()
-    
-#     for label in labels_final_copy:
-#         if label not in pred2cat.keys():
-#             index = labels_final.index(label)
-#             del boxes_final[index]
-#             del labels_final[index]
-#             del segmentations_final[index]
-#         else:
-#             labels_final[labels_final.index(label)] = pred2cat[label]
-    
-#     return labels_final, boxes_final, segmentations_final
-
-
-
-
 def calculate_iou(box1, box2, iouType='bbox', img_height=None, img_width=None):
     """
     Calculate IoU between two bounding boxes or segmentation masks.
-    
+
     Args:
         box1, box2: [x, y, w, h] for 'bbox' or segmentation (RLE or polygon) for 'segm'
         iouType (str): 'bbox' or 'segm'
         img_height (int): Image height (required for segm if converting polygons)
         img_width (int): Image width (required for segm if converting polygons)
-    
+
     Returns:
         float: IoU value
     """
@@ -328,22 +236,23 @@ def calculate_iou(box1, box2, iouType='bbox', img_height=None, img_width=None):
         inter_y_min = max(y1_min, y2_min)
         inter_x_max = min(x1_max, x2_max)
         inter_y_max = min(y1_max, y2_max)
-        
+
         if inter_x_max <= inter_x_min or inter_y_max <= inter_y_min:
             return 0.0
-        
+
         inter_area = (inter_x_max - inter_x_min) * (inter_y_max - inter_y_min)
         box1_area = w1 * h1
         box2_area = w2 * h2
         union_area = box1_area + box2_area - inter_area
-        
+
         return inter_area / union_area if union_area > 0 else 0.0
-    
+
     elif iouType == 'segm':
         try:
             # Ensure image dimensions are provided
             if img_height is None or img_width is None:
-                raise ValueError("img_height and img_width must be provided for segm IoU")
+                raise ValueError(
+                    "img_height and img_width must be provided for segm IoU")
 
             # Convert inputs to RLE if necessary
             if isinstance(box1, dict) and 'counts' in box1:  # RLE format
@@ -351,10 +260,12 @@ def calculate_iou(box1, box2, iouType='bbox', img_height=None, img_width=None):
             elif isinstance(box1, list):  # Polygon format
                 # Flatten nested polygon list if necessary (e.g., [[x1,y1], [x2,y2]] or [[[x1,y1], ...]])
                 if isinstance(box1[0], list) and len(box1[0]) > 0 and isinstance(box1[0][0], list):
-                    box1 = box1[0]  # Take first polygon if multiple are provided
+                    # Take first polygon if multiple are provided
+                    box1 = box1[0]
                 mask1 = cocomask.frPyObjects(box1, img_height, img_width)[0]
             else:
-                raise ValueError(f"Unsupported segmentation format for box1: {type(box1)}")
+                raise ValueError(
+                    f"Unsupported segmentation format for box1: {type(box1)}")
 
             if isinstance(box2, dict) and 'counts' in box2:  # RLE format
                 mask2 = box2
@@ -363,34 +274,38 @@ def calculate_iou(box1, box2, iouType='bbox', img_height=None, img_width=None):
                     box2 = box2[0]
                 mask2 = cocomask.frPyObjects(box2, img_height, img_width)[0]
             else:
-                raise ValueError(f"Unsupported segmentation format for box2: {type(box2)}")
+                raise ValueError(
+                    f"Unsupported segmentation format for box2: {type(box2)}")
 
             # Compute intersection and union
-            inter_area = cocomask.area(cocomask.merge([mask1, mask2], intersect=True))
-            union_area = cocomask.area(cocomask.merge([mask1, mask2], intersect=False))
-            
+            inter_area = cocomask.area(
+                cocomask.merge([mask1, mask2], intersect=True))
+            union_area = cocomask.area(
+                cocomask.merge([mask1, mask2], intersect=False))
+
             return inter_area / union_area if union_area > 0 else 0.0
-        
+
         except Exception as e:
             print(f"Error in segm IoU calculation: {str(e)}")
             print(f"box1: {box1}")
             print(f"box2: {box2}")
             return 0.0  # Return 0 on failure to avoid crashing
-    
+
     else:
         raise ValueError("iouType must be 'bbox' or 'segm'")
+
 
 def calculate_f1_scores(anns, coco_preds, iouType='bbox', unseen=None, iou_threshold=0.5):
     """
     Calculate F1 scores and additional metrics for each class using COCO format annotations and predictions.
-    
+
     Args:
         anns (dict): COCO format ground truth annotations
         coco_preds (list): COCO format predictions
         iouType (str): Type of IoU calculation (default: 'bbox') or 'segm'
         unseen (list): List of unseen class names (default: None) e.g. ['ship', 'basketball_court', 'harbor']
         iou_threshold (float): IoU threshold for determining true positives (default: 0.5)
-    
+
     Returns:
         tuple: (class_metrics dict, mean_f1_score float, mean_f1_unseen float)
             - class_metrics: {cat_name: {'tp': int, 'fp': int, 'fn': int, 'precision': float, 'recall': float, 'f1': float}}
@@ -401,9 +316,10 @@ def calculate_f1_scores(anns, coco_preds, iouType='bbox', unseen=None, iou_thres
     pred_by_image = {}
     categories = {cat['id']: cat['name'] for cat in anns['categories']}
     cat_ids = set(categories.keys())
-    
+
     # Get image dimensions for segm IoU
-    img_dims = {img['id']: (img['height'], img['width']) for img in anns['images']}
+    img_dims = {img['id']: (img['height'], img['width'])
+                for img in anns['images']}
 
     for ann in anns['annotations']:
         img_id = ann['image_id']
@@ -412,7 +328,8 @@ def calculate_f1_scores(anns, coco_preds, iouType='bbox', unseen=None, iou_thres
         cat_id = ann['category_id']
         if cat_id not in gt_by_image[img_id]:
             gt_by_image[img_id][cat_id] = []
-        gt_by_image[img_id][cat_id].append(ann['bbox'] if iouType == 'bbox' else ann['segmentation'])
+        gt_by_image[img_id][cat_id].append(
+            ann['bbox'] if iouType == 'bbox' else ann['segmentation'])
 
     for pred in coco_preds:
         img_id = pred['image_id']
@@ -421,7 +338,8 @@ def calculate_f1_scores(anns, coco_preds, iouType='bbox', unseen=None, iou_thres
         cat_id = pred['category_id']
         if cat_id not in pred_by_image[img_id]:
             pred_by_image[img_id][cat_id] = []
-        pred_by_image[img_id][cat_id].append(pred['bbox'] if iouType == 'bbox' else pred['segmentation'])
+        pred_by_image[img_id][cat_id].append(
+            pred['bbox'] if iouType == 'bbox' else pred['segmentation'])
 
     tp = {cat_id: 0 for cat_id in cat_ids}
     fp = {cat_id: 0 for cat_id in cat_ids}
@@ -443,17 +361,18 @@ def calculate_f1_scores(anns, coco_preds, iouType='bbox', unseen=None, iou_thres
                 for gt_idx, gt_box in enumerate(gt_boxes):
                     if gt_idx in matched_gt:
                         continue
-                    iou = calculate_iou(pred_box, gt_box, iouType, height, width)
+                    iou = calculate_iou(
+                        pred_box, gt_box, iouType, height, width)
                     if iou > max_iou:
                         max_iou = iou
                         best_gt_idx = gt_idx
-                
+
                 if max_iou >= iou_threshold:
                     tp[cat_id] += 1
                     matched_gt.add(best_gt_idx)
                 else:
                     fp[cat_id] += 1
-            
+
             fn[cat_id] += len(gt_boxes) - len(matched_gt)
 
     for img_id in pred_by_image:
@@ -467,9 +386,11 @@ def calculate_f1_scores(anns, coco_preds, iouType='bbox', unseen=None, iou_thres
         tp_val = tp[cat_id]
         fp_val = fp[cat_id]
         fn_val = fn[cat_id]
-        precision = tp_val / (tp_val + fp_val) if (tp_val + fp_val) > 0 else 0.0
+        precision = tp_val / \
+            (tp_val + fp_val) if (tp_val + fp_val) > 0 else 0.0
         recall = tp_val / (tp_val + fn_val) if (tp_val + fn_val) > 0 else 0.0
-        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        f1 = 2 * precision * recall / \
+            (precision + recall) if (precision + recall) > 0 else 0.0
         class_metrics[categories[cat_id]] = {
             'tp': tp_val,
             'fp': fp_val,
@@ -480,27 +401,30 @@ def calculate_f1_scores(anns, coco_preds, iouType='bbox', unseen=None, iou_thres
         }
 
     # Calculate mean F1 score
-    mean_f1_score = np.mean([metrics['f1'] for metrics in class_metrics.values()]) if class_metrics else 0.0
+    mean_f1_score = np.mean(
+        [metrics['f1'] for metrics in class_metrics.values()]) if class_metrics else 0.0
 
     # Calculate mean F1 for unseen classes
     mean_f1_unseen = None
     if unseen:
-        unseen_f1_scores = [class_metrics.get(cat_name, {'f1': 0.0})['f1'] for cat_name in unseen]
+        unseen_f1_scores = [class_metrics.get(cat_name, {'f1': 0.0})[
+            'f1'] for cat_name in unseen]
         mean_f1_unseen = np.mean(unseen_f1_scores) if unseen_f1_scores else 0.0
 
     return class_metrics, mean_f1_score, mean_f1_unseen
 
+
 def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path=None, print_result=True):
     """
     Evaluate AP50 and F1 scores with detailed metrics using COCO annotations and predictions.
-    
+
     Args:
         ann (dict): COCO format ground truth annotations
         coco_predictions (list): COCO format predictions
         iouType (str): Type of IoU calculation ('bbox' or 'segm', default: 'segm')
         unseen (list): List of unseen class names (default: ['ship', 'basketball_court', 'harbor'])
         save_path (str): Path to save results as txt file (default: None)
-    
+
     Returns:
         None: Prints and optionally saves results
     """
@@ -515,7 +439,7 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
         # Calculate AP using COCOeval
         coco_eval = COCOeval(coco_gt, coco_dt, iouType)
         coco_eval.params.iouThrs = np.array([0.5])
-        
+
         coco_eval.evaluate()
         coco_eval.accumulate()
         coco_eval.summarize()
@@ -524,11 +448,11 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
         # Calculate AP using COCOeval
         coco_eval = COCOeval(coco_gt, coco_dt, 'bbox')
         coco_eval.params.iouThrs = np.array([0.5])
-        
+
         coco_eval.evaluate()
         coco_eval.accumulate()
         coco_eval.summarize()
-        
+
     # print("IoU thresholds before eval:", coco_eval.params.iouThrs)
     # coco_eval.evaluate()
     # coco_eval.accumulate()
@@ -554,8 +478,10 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
 
     # Calculate mAP50 for unseen classes
     if unseen is not None:
-        unseen_cat_ids = [cat['id'] for cat in ann['categories'] if cat['name'] in unseen]
-        unseen_aps = [class_ap[cat_names[cat_id]] for cat_id in unseen_cat_ids if cat_id in cat_names]
+        unseen_cat_ids = [cat['id']
+                          for cat in ann['categories'] if cat['name'] in unseen]
+        unseen_aps = [class_ap[cat_names[cat_id]]
+                      for cat_id in unseen_cat_ids if cat_id in cat_names]
         map50_unseen = np.mean(unseen_aps) if unseen_aps else 0.0
 
     # Calculate F1 scores and detailed metrics
@@ -567,7 +493,8 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
     table_data = []
     for cat in ann['categories']:
         cat_name = cat['name']
-        metrics = class_metrics.get(cat_name, {'tp': 0, 'fp': 0, 'fn': 0, 'precision': 0.0, 'recall': 0.0, 'f1': 0.0})
+        metrics = class_metrics.get(
+            cat_name, {'tp': 0, 'fp': 0, 'fn': 0, 'precision': 0.0, 'recall': 0.0, 'f1': 0.0})
         ap_score = class_ap.get(cat_name, 0.0)
         table_data.append([
             cat_name,
@@ -581,7 +508,8 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
         ])
 
     # Format output
-    headers = ['Category', 'TP', 'FP', 'FN', 'Precision', 'Recall', 'F1', 'AP50']
+    headers = ['Category', 'TP', 'FP', 'FN',
+               'Precision', 'Recall', 'F1', 'AP50']
     table_str = tabulate(table_data, headers=headers, tablefmt='grid')
 
     return_summary = {
@@ -589,7 +517,7 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
         'mF1': mean_f1_score*100,
         'mAP50': ap50_all*100,
     }
-    
+
     if unseen is not None:
         summary_str = (
             f"mAP50: {ap50_all * 100:.1f}\n"
@@ -621,18 +549,18 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
             print(f"Results saved to {save_path}")
         except Exception as e:
             print(f"Failed to save results: {str(e)}")
-    
-    return  return_summary
+
+    return return_summary
 
 
 def evaluate_mIoU(ann, coco_predictions, save_path=None):
     """
     Evaluate per-class IoU and mIoU for instance segmentation results compared to semantic segmentation.
-    
+
     Args:
         ann (dict): COCO format ground truth annotations with segmentation
         coco_predictions (list): COCO format predictions with segmentation
-    
+
     Returns:
         None: Prints table of per-class IoU and mIoU
     """
@@ -652,8 +580,10 @@ def evaluate_mIoU(ann, coco_predictions, save_path=None):
     # Initialize accumulators for intersection and union per class
     intersection = {cat_id: 0 for cat_id in cat_ids}
     union = {cat_id: 0 for cat_id in cat_ids}
-    gt_area = {cat_id: 0 for cat_id in cat_ids}  # For classes with no predictions
-    pred_area = {cat_id: 0 for cat_id in cat_ids}  # For classes with no ground truth
+    # For classes with no predictions
+    gt_area = {cat_id: 0 for cat_id in cat_ids}
+    # For classes with no ground truth
+    pred_area = {cat_id: 0 for cat_id in cat_ids}
 
     # Process each image
     for img_id in img_ids:
@@ -679,7 +609,8 @@ def evaluate_mIoU(ann, coco_predictions, save_path=None):
                 if isinstance(ann['segmentation'], dict):  # RLE
                     mask = ann['segmentation']
                 else:  # Polygon
-                    mask = cocomask.frPyObjects(ann['segmentation'], height, width)[0]
+                    mask = cocomask.frPyObjects(
+                        ann['segmentation'], height, width)[0]
                 gt_masks[cat_id].append(mask)
 
         # Predicted masks
@@ -689,7 +620,8 @@ def evaluate_mIoU(ann, coco_predictions, save_path=None):
                 if isinstance(pred['segmentation'], dict):  # RLE
                     mask = pred['segmentation']
                 else:  # Polygon
-                    mask = cocomask.frPyObjects(pred['segmentation'], height, width)[0]
+                    mask = cocomask.frPyObjects(
+                        pred['segmentation'], height, width)[0]
                 pred_masks[cat_id].append(mask)
 
         # Compute per-class IoU for this image
@@ -699,17 +631,22 @@ def evaluate_mIoU(ann, coco_predictions, save_path=None):
 
             # Merge all instance masks into a single class mask
             if gt_mask_list:
-                gt_merged = cocomask.merge(gt_mask_list, intersect=False)  # Union of GT masks
+                gt_merged = cocomask.merge(
+                    gt_mask_list, intersect=False)  # Union of GT masks
             else:
-                gt_merged = cocomask.encode(np.zeros((height, width), dtype=np.uint8, order='F'))
+                gt_merged = cocomask.encode(
+                    np.zeros((height, width), dtype=np.uint8, order='F'))
 
             if pred_mask_list:
-                pred_merged = cocomask.merge(pred_mask_list, intersect=False)  # Union of pred masks
+                pred_merged = cocomask.merge(
+                    pred_mask_list, intersect=False)  # Union of pred masks
             else:
-                pred_merged = cocomask.encode(np.zeros((height, width), dtype=np.uint8, order='F'))
+                pred_merged = cocomask.encode(
+                    np.zeros((height, width), dtype=np.uint8, order='F'))
 
             # Compute intersection and union
-            inter = cocomask.area(cocomask.merge([gt_merged, pred_merged], intersect=True))
+            inter = cocomask.area(cocomask.merge(
+                [gt_merged, pred_merged], intersect=True))
             gt_area_cat = cocomask.area(gt_merged)
             pred_area_cat = cocomask.area(pred_merged)
             union_cat = gt_area_cat + pred_area_cat - inter
@@ -728,7 +665,8 @@ def evaluate_mIoU(ann, coco_predictions, save_path=None):
         else:
             # If no predictions and no ground truth, IoU is undefined; typically set to 0 or 1 depending on convention
             # Here, we'll use 0 unless there's ground truth with no predictions (then ignore in mIoU)
-            iou = 0.0 if gt_area[cat_id] > 0 or pred_area[cat_id] > 0 else float('nan')
+            iou = 0.0 if gt_area[cat_id] > 0 or pred_area[cat_id] > 0 else float(
+                'nan')
         class_iou[categories[cat_id]] = iou
 
     # Calculate mIoU (excluding classes with no GT or pred)
@@ -758,7 +696,7 @@ def evaluate_mIoU(ann, coco_predictions, save_path=None):
 
 def calculate_num_rp(rp_dict, threshold=0.01):
     cnt = 0
-    for key, value in rp_dict.items():
+    for _, value in rp_dict.items():
         # filter bboxes with score >= threshold
         for i in range(len(value['scores'])):
             if value['scores'][i] >= threshold:
@@ -769,49 +707,50 @@ def calculate_num_rp(rp_dict, threshold=0.01):
 
 def calculate_rp_recall(gt_data: list, pred_data: dict, pred_data2: dict = None, score_threshold: float = 0.01):
     """
-    计算一个或两个预测结果的recall值
-    
-    参数:
-        gt_data (list): Ground truth annotations (COCO格式)
-        pred_data (dict): 第一个预测结果 (格式为 {"img_name": {"bboxes": [[x_min, y_min, w, h], ...]}})
-        pred_data2 (dict, optional): 第二个预测结果 
-        score_threshold (float): 分数阈值
+    Calculate the recall value of one or two prediction results
+
+    Args:
+        gt_data (list): Ground truth annotations (COCO format)
+        pred_data (dict): First prediction result (format as {"img_name": {"bboxes": [[x_min, y_min, w, h], ...]}})
+        pred_data2 (dict, optional): Second prediction result 
+        score_threshold (float): Score threshold
     """
     def calculate_single_recall(pred_data, gt_annotations):
         print(f'{calculate_num_rp(pred_data, score_threshold)} region proposals')
-        category_stats = {cat['id']: {'tp': 0, 'total': 0} for cat in gt_data['categories']}
-        
-        # 初始化类别统计的total
+        category_stats = {cat['id']: {'tp': 0, 'total': 0}
+                          for cat in gt_data['categories']}
+
+        # initialize the total of category stats
         for ann in gt_data['annotations']:
             cat_id = ann['category_id']
             category_stats[cat_id]['total'] += 1
 
-        # 处理每个GT图片的预测结果
+        # process each GT image prediction result
         for img_info in gt_data['images']:
             img_name = img_info['file_name']
             img_id = str(img_info['id'])
-            
+
             if img_name not in pred_data:
                 continue
 
-            # 检查gt_annotations中是否有该图片的标注
+            # check if the image has annotations in gt_annotations
             if img_id not in gt_annotations:
-                continue  # 跳过没有标注的图片
+                continue  # skip images without annotations
 
-            # 重置gt_boxes的matched状态
+            # reset the matched status of gt_boxes
             gt_boxes = copy.deepcopy(gt_annotations[img_id])
             predictions = pred_data[img_name]
             pred_boxes = predictions['bboxes']
             pred_scores = predictions.get('scores', [1.0] * len(pred_boxes))
 
-            # 处理每个预测框
+            # process each prediction box
             for pred_box, pred_score in zip(pred_boxes, pred_scores):
                 if pred_score < score_threshold:
                     continue
-                    
+
                 max_iou = 0
                 best_match_idx = -1
-                
+
                 for i, gt_box in enumerate(gt_boxes):
                     if gt_box['matched']:
                         continue
@@ -825,22 +764,24 @@ def calculate_rp_recall(gt_data: list, pred_data: dict, pred_data2: dict = None,
                     cat_id = gt_boxes[best_match_idx]['category_id']
                     category_stats[cat_id]['tp'] += 1
 
-        # 计算每个类别的recall
+        # calculate the recall of each category
         category_recalls = {}
         for cat_id, stats in category_stats.items():
-            cat_recall = stats['tp'] / stats['total'] if stats['total'] > 0 else 0
+            cat_recall = stats['tp'] / \
+                stats['total'] if stats['total'] > 0 else 0
             cat_name = category_map[cat_id]
             category_recalls[cat_name] = cat_recall
 
-        # 计算平均recall
-        mean_recall = sum(category_recalls.values()) / len(category_recalls) if category_recalls else 0.0
-        
+        # calculate the average recall
+        mean_recall = sum(category_recalls.values()) / \
+            len(category_recalls) if category_recalls else 0.0
+
         return category_recalls, mean_recall
 
-    # 创建类别映射
+    # create category map
     category_map = {cat['id']: cat['name'] for cat in gt_data['categories']}
 
-    # 创建gt_annotations
+    # create gt_annotations
     gt_annotations = {}
     for ann in gt_data['annotations']:
         img_id = str(ann['image_id'])
@@ -852,14 +793,15 @@ def calculate_rp_recall(gt_data: list, pred_data: dict, pred_data2: dict = None,
             'matched': False
         })
 
-    # 计算第一个预测结果的recall
-    category_recalls1, mean_recall1 = calculate_single_recall(pred_data, gt_annotations)
+    # calculate the recall of the first prediction result
+    category_recalls1, mean_recall1 = calculate_single_recall(
+        pred_data, gt_annotations)
 
-    # 如果有第二个预测结果，计算它的recall
+    # if there is a second prediction result, calculate its recall
     if pred_data2 is not None:
-        category_recalls2, mean_recall2 = calculate_single_recall(pred_data2, gt_annotations)
+        category_recalls2, mean_recall2 = calculate_single_recall(
+            pred_data2, gt_annotations)
 
-    # 准备表格数据
     table_data = []
     for cat_name in category_map.values():
         row = [
@@ -870,12 +812,10 @@ def calculate_rp_recall(gt_data: list, pred_data: dict, pred_data2: dict = None,
             row.append(f"{category_recalls2[cat_name] * 100:.1f}")
         table_data.append(row)
 
-    # 定义表头
     headers = ['Category', 'Recall 1']
     if pred_data2 is not None:
         headers.append('Recall 2')
 
-    # 打印结果
     print("\nPer-category Results:")
     print(tabulate(table_data, headers=headers, tablefmt='grid'))
     print(f"\nMean Recall 1: {mean_recall1 * 100:.1f}")
