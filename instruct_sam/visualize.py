@@ -1,28 +1,19 @@
+import pycocotools.mask as mask_util
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-import random
 import matplotlib.patches as patches
-
-# plt.rcParams["font.family"] = "Times New Roman"
-
-# CATEGORIES = ['expressway service area', 'expressway toll station', 'airplane', 'airport', 'baseball field', 'basketball court', 'bridge',
-#     'chimney', 'dam', 'golffield', 'ground track field', 'harbor', 'overpass', 'ship', 'stadium', 'storage tank', 'tennis court', 'train station',
-#     'vehicle', 'windmill']
-
-# COLORS = {category: [int(c * 255) for c in plt.cm.tab20(i)[:3]] for i, category in enumerate(CATEGORIES)}
-# COLORS['RP'] = [100, 100, 100]  # 为RP类别分配灰色
 
 
 def extract_results_from_coco(coco_preds, coco_ann, img_name, score_threshold=0):
     """
     Extract detection results for a specific image from standard COCO format predictions.
-    
+
     Args:
         coco_preds (list): List of COCO format prediction dictionaries.
         coco_ann (dict): COCO format annotation dictionary containing image information.
         img_name (str): Name of the target image file.
-    
+
     Returns:
         tuple: A tuple containing:
             - boxes (list): List of bounding boxes in format [x, y, width, height].
@@ -31,11 +22,13 @@ def extract_results_from_coco(coco_preds, coco_ann, img_name, score_threshold=0)
             - segmentations (list): List of segmentation masks (either polygon or RLE format), or None if not available.
     """
     # Create mapping from image filename to image id
-    image_name_to_id = {img_info['file_name']: img_info['id'] for img_info in coco_ann['images']}
-    
+    image_name_to_id = {img_info['file_name']: img_info['id']
+                        for img_info in coco_ann['images']}
+
     # Create mapping from category id to category name
-    category_id_to_name = {cat['id']: cat['name'] for cat in coco_ann['categories']}
-    
+    category_id_to_name = {cat['id']: cat['name']
+                           for cat in coco_ann['categories']}
+
     # If coco_preds is None, return ground truth annotations
     if coco_preds is None:
         # Check if image exists
@@ -43,32 +36,34 @@ def extract_results_from_coco(coco_preds, coco_ann, img_name, score_threshold=0)
             return [], [], [], []
         image_id = image_name_to_id[img_name]
         # Gather GT annotations for this image
-        gt_anns = [ann for ann in coco_ann['annotations'] if ann['image_id'] == image_id]
+        gt_anns = [ann for ann in coco_ann['annotations']
+                   if ann['image_id'] == image_id]
         # Extract boxes, labels, default scores, and segmentations
         boxes = [ann['bbox'] for ann in gt_anns]
-        labels = [category_id_to_name.get(ann['category_id'], f"unknown_{ann['category_id']}") for ann in gt_anns]
+        labels = [category_id_to_name.get(
+            ann['category_id'], f"unknown_{ann['category_id']}") for ann in gt_anns]
         scores = [1.0] * len(gt_anns)
         segmentations = [ann.get('segmentation', None) for ann in gt_anns]
         # Normalize segmentations if all None
         if all(seg is None for seg in segmentations):
             segmentations = None
         return boxes, labels, scores, segmentations
-    
+
     # Get the image id for the given image name
     if img_name not in image_name_to_id:
         return [], [], [], []  # Return empty lists if image not found
-    
+
     image_id = image_name_to_id[img_name]
-    
+
     # Filter predictions for the target image
     image_preds = [pred for pred in coco_preds if pred['image_id'] == image_id]
-    
+
     # Extract boxes, labels, scores, and segmentations from the filtered predictions
     boxes = []
     labels = []
     scores = []
     segmentations = []
-    
+
     for pred in image_preds:
         if 'score' in pred:
             if pred['score'] > score_threshold:
@@ -80,74 +75,33 @@ def extract_results_from_coco(coco_preds, coco_ann, img_name, score_threshold=0)
         # Extract bounding box
         if 'bbox' in pred:
             boxes.append(pred['bbox'])
-            
+
         # Extract category name from category id
         if 'category_id' in pred and 'label' not in pred:
             category_id = pred['category_id']
-            labels.append(category_id_to_name.get(category_id, f"unknown_{category_id}"))
+            labels.append(category_id_to_name.get(
+                category_id, f"unknown_{category_id}"))
         elif 'label' in pred:
             labels.append(pred['label'])
-        # Extract confidence score
         # Extract segmentation if available
         if 'segmentation' in pred:
             segmentations.append(pred['segmentation'])
         else:
             segmentations.append(None)
-    
+
     # If no segmentations are found, return None instead of a list of Nones
     if all(seg is None for seg in segmentations):
         segmentations = None
-    
+
     return boxes, labels, scores, segmentations
 
-
-def extract_oed_result(oed_preds, coco_ann, image_name):
-    """
-    Extract detection results for a specific image from open-ended detection predictions.
-    
-    Args:
-        oed_preds (list): List of open-ended detection prediction dictionaries.
-        coco_ann (dict): COCO format annotation dictionary containing image information.
-        image_name (str): Name of the target image file.
-    
-    Returns:
-        tuple: A tuple containing:
-            - boxes (list): List of bounding boxes in format [x, y, width, height].
-            - labels (list): List of class labels as strings.
-            - scores (list): List of confidence scores.
-    """
-    # Create mapping from image filename to image id
-    image_name_to_id = {img_info['file_name']: img_info['id'] for img_info in coco_ann['images']}
-    
-    # Get the image id for the given image name
-    if image_name not in image_name_to_id:
-        return [], [], []  # Return empty lists if image not found
-    
-    image_id = image_name_to_id[image_name]
-    
-    # Filter predictions for the target image
-    image_preds = [pred for pred in oed_preds if pred['image_id'] == image_id]
-    
-    # Extract boxes, labels, and scores from the filtered predictions
-    boxes = [pred['bbox'] for pred in image_preds]
-    labels = [pred['label'] for pred in image_preds]
-    scores = [pred['score'] for pred in image_preds]
-    
-    return boxes, labels, scores
-    
-    
-import matplotlib.patches as patches
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-import pycocotools.mask as mask_util
 
 def visualize_prediction(image, bboxes=None, labels=None, segmentations=None, scores=None, color_dict=None,
                          dpi=100, show_gt=False, ann_data=None, img_path=None, alpha_mask=0.3, title='Predictions',
                          save_path=None):
     """
     Visualize object detection predictions and optional Ground Truth.
-    
+
     Parameters:
         image (numpy.ndarray): Input image.
         bboxes (list): COCO format bounding boxes, each as [x, y, w, h].
@@ -179,7 +133,7 @@ def visualize_prediction(image, bboxes=None, labels=None, segmentations=None, sc
     def visualize_rle_mask(rle_data, ax, color):
         """
         Visualize a Run-Length Encoding (RLE) segmentation mask.
-        
+
         Parameters:
             rle_data (dict): RLE segmentation data with 'size' and 'counts' fields.
             ax (matplotlib.axes.Axes): Matplotlib axes to draw on.
@@ -189,7 +143,8 @@ def visualize_prediction(image, bboxes=None, labels=None, segmentations=None, sc
         if isinstance(rle_data, dict) and 'counts' in rle_data and 'size' in rle_data:
             binary_mask = mask_util.decode(rle_data)
             # Convert to RGBA with transparency
-            mask_rgba = np.zeros((binary_mask.shape[0], binary_mask.shape[1], 4))
+            mask_rgba = np.zeros(
+                (binary_mask.shape[0], binary_mask.shape[1], 4))
             mask_rgba[binary_mask > 0] = (*color, alpha_mask)  # RGB + alpha
             ax.imshow(mask_rgba, interpolation='nearest')
 
@@ -202,12 +157,14 @@ def visualize_prediction(image, bboxes=None, labels=None, segmentations=None, sc
                 color = color_dict.get(label, np.random.rand(3))
             else:
                 if label not in color_map:
-                    color_map[label] = np.random.rand(3)  # Generate random color for each class
+                    # Generate random color for each class
+                    color_map[label] = np.random.rand(3)
                 color = color_map[label]
             # print("color", color)
             # Draw bounding box
             x, y, w, h = bboxes[i]
-            rect = patches.Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
+            rect = patches.Rectangle(
+                (x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
             ax1.add_patch(rect)
 
             # Display label and score
@@ -217,12 +174,12 @@ def visualize_prediction(image, bboxes=None, labels=None, segmentations=None, sc
             else:
                 text = f"{label}"
             ax1.text(x, y, text, color='white', fontsize=10,
-                    bbox=dict(facecolor=color, alpha=0.5, edgecolor='none'))
+                     bbox=dict(facecolor=color, alpha=0.5, edgecolor='none'))
 
             # Draw segmentation
             if segmentations is not None and i < len(segmentations):
                 seg = segmentations[i]
-                
+
                 # Handle RLE format
                 if isinstance(seg, dict) and 'counts' in seg and 'size' in seg:
                     visualize_rle_mask(seg, ax1, color)
@@ -233,43 +190,48 @@ def visualize_prediction(image, bboxes=None, labels=None, segmentations=None, sc
                             for polygon in seg:
                                 points = np.array(polygon).reshape(-1, 2)
                                 poly_patch = patches.Polygon(points, closed=True, fill=True,
-                                                         color=color, alpha=alpha_mask, edgecolor=None)
+                                                             color=color, alpha=alpha_mask, edgecolor=None)
                                 ax1.add_patch(poly_patch)
 
     # Process Ground Truth
     if show_gt or (bboxes is None and segmentations is None and ann_data is not None and img_path is not None):
         if ann_data is None or img_path is None:
             raise ValueError("ann_data and img_path are required to show GT")
-        
+
         # Find matching image_id
-        image_id = next((img_info['id'] for img_info in ann_data['images'] if img_info['file_name'] == os.path.basename(img_path)), None)
+        image_id = next((img_info['id'] for img_info in ann_data['images']
+                        if img_info['file_name'] == os.path.basename(img_path)), None)
 
         if image_id is None:
             raise ValueError(f"Image not found: {img_path}")
 
         # Get annotations for this image
-        gt_annotations = [ann for ann in ann_data['annotations'] if ann['image_id'] == image_id]
+        gt_annotations = [ann for ann in ann_data['annotations']
+                          if ann['image_id'] == image_id]
 
         # Draw each GT annotation
         color_map = {}  # Store color for each class if color_dict is None
         for ann in gt_annotations:
             category_id = ann['category_id']
-            label = next((cat['name'] for cat in ann_data['categories'] if cat['id'] == category_id), 'unknown')
+            label = next((cat['name'] for cat in ann_data['categories']
+                         if cat['id'] == category_id), 'unknown')
 
             if color_dict is not None:
                 color = color_dict.get(label, np.random.rand(3))
             else:
                 if label not in color_map:
-                    color_map[label] = np.random.rand(3)  # Generate random color for each class
+                    # Generate random color for each class
+                    color_map[label] = np.random.rand(3)
                 color = color_map[label]
 
             # Determine which axis to draw on
-            target_ax = ax2 if show_gt and (bboxes is not None or segmentations is not None) else ax1
+            target_ax = ax2 if show_gt and (
+                bboxes is not None or segmentations is not None) else ax1
 
             # Draw segmentation (if available)
             if 'segmentation' in ann:
                 seg = ann['segmentation']
-                
+
                 # Handle RLE format segmentation
                 if isinstance(seg, dict) and 'counts' in seg and 'size' in seg:
                     visualize_rle_mask(seg, target_ax, color)
@@ -279,19 +241,20 @@ def visualize_prediction(image, bboxes=None, labels=None, segmentations=None, sc
                         if isinstance(polygon, list):
                             points = np.array(polygon).reshape(-1, 2)
                             poly_patch = patches.Polygon(points, closed=True, fill=True,
-                                                        color=color, alpha=alpha_mask, edgecolor=None)
+                                                         color=color, alpha=alpha_mask, edgecolor=None)
                             target_ax.add_patch(poly_patch)
 
             # Draw GT bounding box
             x, y, w, h = ann['bbox']
-            rect = patches.Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
+            rect = patches.Rectangle(
+                (x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
             target_ax.add_patch(rect)
 
-            ################# Draw label
+            # Draw label
             text = f"{label}"
 
             target_ax.text(x, y, text, color='white', fontsize=10,
-                         bbox=dict(facecolor=color, alpha=0.5, edgecolor='none'))
+                           bbox=dict(facecolor=color, alpha=0.5, edgecolor='none'))
 
     # Hide axes and adjust layout
     if show_gt and (bboxes is not None or segmentations is not None):
@@ -305,14 +268,12 @@ def visualize_prediction(image, bboxes=None, labels=None, segmentations=None, sc
         plt.savefig(save_path)
     plt.show()
 
-    
-    
-    
+
 def show_sam_masks(image, anns, alpha=0.35):
     """
     Display the segmentation masks from SAM (Segment Anything Model) on the input image.
     Supports both binary mask format and RLE (Run Length Encoding) format.
-    
+
     Args:
         image (numpy.ndarray): Input image as a numpy array (H, W, 3)
         anns (list): List of annotation dictionaries, each containing a 'segmentation' field
@@ -320,32 +281,32 @@ def show_sam_masks(image, anns, alpha=0.35):
         alpha (float): Transparency level for the masks (0.0 to 1.0). Default is 0.35.
     """
     import pycocotools.mask as mask_util
-    
+
     plt.figure(figsize=(6, 6))
     plt.imshow(image)
     if len(anns) == 0:
         plt.axis('off')
         plt.show()
         return
-    
+
     # Sort masks by area for better visualization (larger masks behind smaller ones)
     if 'area' in anns[0]:
         sorted_anns = sorted(anns, key=(lambda x: x['area']), reverse=True)
     else:
         sorted_anns = anns
-    
+
     ax = plt.gca()
     ax.set_autoscale_on(False)
-    
+
     # Create an empty RGBA image with transparent background
     h, w = image.shape[:2]
     mask_overlay = np.zeros((h, w, 4))
-    
+
     for ann in sorted_anns:
         # Get segmentation mask, handle both binary mask and RLE format
         if 'segmentation' in ann:
             seg = ann['segmentation']
-            
+
             # Check if the segmentation is in RLE format
             if isinstance(seg, dict) and 'counts' in seg and 'size' in seg:
                 # Decode RLE to binary mask
@@ -354,13 +315,13 @@ def show_sam_masks(image, anns, alpha=0.35):
             else:
                 # Direct binary mask
                 mask = seg
-            
+
             # Generate a random color for this mask
             color_mask = np.concatenate([np.random.random(3), [alpha]])
-            
+
             # Apply the mask color to the overlay
             mask_overlay[mask] = color_mask
-    
+
     # Show the mask overlay on the image
     ax.imshow(mask_overlay)
     plt.axis('off')
