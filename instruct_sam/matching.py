@@ -215,7 +215,7 @@ def assign_labels_with_constraints(similarity_scores, gpt_predicted_counts):
 
 def match_boxes_and_counts(image, boxes, object_cnt, text_features,
                            model, preprocess, segmentations=None,
-                           crop_scale=1.2, batch_size=200, full_categories=None, min_crop_width=0,
+                           crop_scale=1.2, batch_size=200, min_crop_width=0,
                            show_similarities=False, zero_count_warning=True):
     """
     Assigns region proposals (bounding boxes) to categories based on similarity scores and object count constraints.
@@ -233,7 +233,6 @@ def match_boxes_and_counts(image, boxes, object_cnt, text_features,
         segmentations (list, optional): List of segmentation masks for each region. Defaults to None.
         crop_scale (float, optional): Scale factor for cropping regions around each box. Defaults to 1.2.
         batch_size (int, optional): Batch size for feature extraction. Defaults to 200.
-        full_categories (list, optional): List of all possible categories. If provided, restricts matching to these. Defaults to None.
         min_crop_width (int, optional): Minimum width/height for cropped regions. Defaults to 0.
         show_similarities (bool, optional): If True, visualize similarity scores for each region. Defaults to False.
         zero_count_warning (bool, optional): If True, print a warning when no valid categories are predicted. Defaults to True.
@@ -334,15 +333,6 @@ def match_boxes_and_counts(image, boxes, object_cnt, text_features,
             model.logit_scale.exp() + \
             model.logit_bias  # [num_boxes, num_gpt_classes]
         similarity_scores = torch.sigmoid(similarity_scores)
-
-    # If full_categories is not empty, remove the columns of similarity_scores
-    # that are not in gpt_predicted_classes
-    if full_categories:
-        # Get the indices of gpt_predicted_classes in full_categories
-        indices = [full_categories.index(
-            cls) for cls in gpt_predicted_classes if cls in full_categories]
-        # Use these indices to select the columns of similarity_scores
-        similarity_scores = similarity_scores[:, indices]
 
     similarity_labels = []
     # Store the new scores for each box (concatenated string)
