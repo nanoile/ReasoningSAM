@@ -150,7 +150,7 @@ def predict(text_prompt, encoded_image, top_p=1, temperature=1, model="gpt-4o-20
     return completion
 
 
-def count_gt(annotations_data, img_name, lvis=False):
+def count_gt(annotations_data, img_name):
     """
     Count the number of targets in each category in the specified image.
 
@@ -166,13 +166,11 @@ def count_gt(annotations_data, img_name, lvis=False):
 
     # Find the image_id corresponding to the image
     image_id = None
-    if lvis:
-        image_id = int(img_name.split('.')[0])
-    else:
-        for img_info in annotations_data['images']:
-            if img_info['file_name'] == img_name:
-                image_id = img_info['id']
-                break
+
+    for img_info in annotations_data['images']:
+        if img_info['file_name'] == img_name:
+            image_id = img_info['id']
+            break
 
     if image_id is None:
         print(f"The annotation of {img_name} is not found")

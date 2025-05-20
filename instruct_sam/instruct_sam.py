@@ -13,12 +13,11 @@ import copy
 
 
 class InstructSAM:
-    def __init__(self, annotations=None, img_dir=None, count_dir=None, rp_preds=None, lvis=False, device="cuda:0"):
+    def __init__(self, annotations=None, img_dir=None, count_dir=None, rp_preds=None, device="cuda:0"):
         
         self.img_dir = img_dir
         self.count_dir = count_dir
         self.rp_preds = rp_preds
-        self.lvis = lvis
         self.device = device
         if annotations is not None:
             if isinstance(annotations, str):
@@ -38,7 +37,7 @@ class InstructSAM:
         self.img_jpeg = Image.open(self.img_path)
         self.img_array = np.array(self.img_jpeg.convert("RGB"))
         if self.anns is not None:
-            self.gt_counts = count_gt(self.anns, self.img_name, lvis=self.lvis)
+            self.gt_counts = count_gt(self.anns, self.img_name)
             self.img_id = self.img_name_to_id[self.img_name]
 
     def load_rps_and_cnts(self, thr=0.0):
