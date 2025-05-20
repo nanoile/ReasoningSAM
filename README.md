@@ -110,8 +110,8 @@ The counting result for each image is saved in JSON format, following the struct
 ```bash
 python inference_tools/async_count.py --dataset_name dior_mini \
                                       --dataset_config datasets/config.json \
-                                      --base_url https://api.gpt.ge/v1/ \
-                                      --api_key sk-RWrbcDyifkghniRiE1FeC79a9c1244F19063AaC7266c3dA2 \
+                                      --base_url your_base_url \
+                                      --api_key your_api_key \
                                       --model gpt-4o-2024-11-20 \
                                       --prompt_path prompts/dior/open_vocabulary.txt
 ```
