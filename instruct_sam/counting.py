@@ -214,23 +214,23 @@ def extract_dict_from_string(response_string):
 
 def print_counts(pred_counts, gt_counts):
     """
-    打印预测计数和真实计数中不为0的类别及其数量。
+    Print the categories and their counts in the prediction and ground truth that are not zero.
 
-    :param pred_counts: 字典，预测计数结果。
-    :param gt_counts: 字典，真实计数结果。
+    :param pred_counts: A dictionary, the prediction counting result.
+    :param gt_counts: A dictionary, the ground truth counting result.
     """
-    print("不为0的计数结果如下：\n")
-    print(f"{'类别':<30} {'预测计数 (Pred)':<20} {'真实计数 (GT)':<20}")
+    print("The categories and their counts in the prediction and ground truth that are not zero are as follows:\n")
+    print(f"{'Category':<30} {'Pred Count (Pred)':<20} {'GT Count (GT)':<20}")
     print("-" * 70)
 
-    # 获取所有可能出现的类别
+    # Get all possible categories
     all_categories = set(pred_counts.keys()).union(gt_counts.keys())
 
     for category in all_categories:
         pred_count = pred_counts.get(category, 0)
         gt_count = gt_counts.get(category, 0)
 
-        # 仅打印不为0的类别
+        # Only print the categories that are not zero
         if pred_count != 0 or gt_count != 0:
             print(f"{category:<30} {pred_count:<20} {gt_count:<20}")
 
@@ -266,10 +266,10 @@ def save_count(pred_counts, save_dir, img_name, print_output_path=True):
 
 def load_gt_counts(gt_data):
     """
-    从 COCO 格式的标注文件中计算每个类别的计数。
+    Calculate the count of each category from the COCO format annotation file.
 
-    :param gt_ann_path: GT 标注文件路径
-    :return: 一个字典，键为类别，值为计数
+    :param gt_data: The path to the COCO format annotation file.
+    :return: A dictionary, where the key is the category and the value is the count.
     """
     if isinstance(gt_data, str):
         with open(gt_data, 'r') as f:
