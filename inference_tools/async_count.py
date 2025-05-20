@@ -68,6 +68,12 @@ def parse_args():
         default=None,
         help="Path to the save directory (default: ./object_counts).",
     )
+    parser.add_argument(
+        "--skip_existing",
+        action="store_true",
+        default=False,
+        help="Whether to skip existing files in the save directory.",
+    )
     args = parser.parse_args()
 
     return args
@@ -193,10 +199,11 @@ if __name__ == '__main__':
         annotations = json.load(f)
     file_names = [image['file_name'] for image in annotations['images']]
 
-    # skip existing files in save_dir
-    existing_files = set(os.listdir(save_dir))
-    file_names = [
-        file for file in file_names if f"{os.path.splitext(file)[0]}.json" not in existing_files]
+    if args.skip_existing:
+        # skip existing files in save_dir
+        existing_files = set(os.listdir(save_dir))
+        file_names = [
+            file for file in file_names if f"{os.path.splitext(file)[0]}.json" not in existing_files]
 
     print(f"\nProcessing {len(file_names)} images...\n")
     img_path_list = [os.path.join(img_dir, image_name)

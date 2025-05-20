@@ -1,35 +1,93 @@
-# InstructSAM
+# Technical Appendix for EarthInstruct and InstructSAM
 
-Yijie Zheng, Weijie Wu, Qingyun Li, Xuehui Wang, Xu Zhou, Aiai Ren, Jun Shen, Long Zhao, Guoqing Li, Xue Yang
-
-[Paper] [Colab] [Dataset]
+Anonymous Authors
 
 ## Note
-Delete author name, api, work path when submitting anonymous code.
+Remove author names, API keys, and working paths when submitting anonymous code.
 
-## Installation
+## Introduction
+InstructSAM is a training-free framework for Instruction-Oriented Object Counting, Detection, and Segmentation (InstructCDS). We construct EarthInstruct, an InstructCDS benchmark for remote sensing. The instructions included in EarthInstruct are open-vocabulary, open-ended, and open-subclass.
+
+![Task Settings](assets/task_settings.png)
+
+InstructSAM addresses InstructCDS by decomposing them into several tractable steps.
+![Framework](assets/framework.png)
+
+## Prerequisites
+### Installation
+1. Create a new conda environment.
+`python>=3.10` and `torch>=2.5.1` are recommended for compatibility with SAM2.
+```bash
+conda create -n python=3.10 insam
+conda activate insam
+pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
+```
+2. Install `SAM2`.
+```bash
+# git clone xxxxx
+cd InstructSAM/third_party/sam2
+pip install -e ".[notebooks]"
+```
+3. Install `instruct_sam` and its dependencies.
+```bash
+cd ../../
+pip install -e .
+```
+
+### Checkpoint Download
+For double-blind review, this code only references publicly available third-party resources.
+
+- LVLM Counter
+
+Download [Qwen2.5-VL](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main) or use an API request in OpenAI format.
+```bash
+huggingface-cli download Qwen/Qwen2.5-VL-7B-Instruct \
+                         --local-dir ./checkpoints/Qwen2.5-VL-7B-Instruct \
+                         --resume-download
+```
+
+- Mask Proposer
+Download [sam2_hiera_large.pt](https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_large.pt) to the ./checkpoint directory.
+
+- CLIP Model
+  - [DFN2B-CLIP-ViT-L-14-39B](https://huggingface.co/apple/DFN2B-CLIP-ViT-L-14-39B/resolve/main/open_clip_pytorch_model.bin?download=true)
+  - [GeoRSCLIP-ViT-L-14](https://huggingface.co/Zilun/GeoRSCLIP/resolve/main/ckpt/RS5M_ViT-L-14-336.pt?download=true)
+  - [GeoRSCLIP-ViT-B-32](https://huggingface.co/Zilun/GeoRSCLIP/resolve/main/ckpt/RS5M_ViT-B-32.pt?download=true)
+  - [SkyCLIP-ViT-L-14](https://opendatasharing.s3.us-west-2.amazonaws.com/SkyScript/ckpt/SkyCLIP_ViT_L14_top30pct_filtered_by_CLIP_laion_RS.zip)
+  - [SkyCLIP-ViT-B-32](https://opendatasharing.s3.us-west-2.amazonaws.com/SkyScript/ckpt/SkyCLIP_ViT_B32_top50pct.zip)
+  - [RemoteCLIP-ViT-L-14](https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-L-14.pt?download=true)
+  - [RemoteCLIP-ViT-B-32](https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt?download=true)
+
+The checkpoint path should be stored in [CLIP checkpoints](checkpoints/config.yaml), so that the CLIP model can be switched to different variants by modifying the model name.
+
+### Dataset Preparation
+We provide a subset of DIOR with 4 images to quickly go through the entire pipeline. The detailed benchmark category split is stored in the [dataset config](datasets/config.json).
+
+| Dataset     | Image                                                                 | Annotation                          |
+| ----------- | -------------------------------------------------------------------- | ----------------------------------- |
+| DIOR-mini   | [local](datasets/dior/JPEGImages-trainval/)                          | [dior_mini_ann.json](datasets/dior/dior_mini_ann.json) |
+| DIOR        | [Google Drive](https://drive.google.com/drive/folders/1UdlgHk49iu6WpcJ5467iT-UqNPpx__CC) | [dior_ins_val_ann.json](datasets/dior/dior_ins_val_ann.json) |
+| NWPU-VHR-10 | [One Drive](https://1drv.ms/u/s!AmgKYzARBl5cczaUNysmiFRH4eE)         | [nwpu_ins_ann.json](datasets/nwpu/nwpu_ins_ann.json) |
+
 
 ## Getting Started
-First download the checkpoints of SAM2, Qwen2.5-VL, GeoRSCLIP.
 
 See the example notebooks for more details.
 
-
 ## Inference
-First, prepare your prompts in the folder
-It is recommended to perform batch inference.
-It is recommended to prepare the unannotated data in COCO format, just leave the 'annotations' field blank.
+Please prepare the metadata in COCO annotation format. For unannotated datasets, simply leave the 'annotations' field blank. Replace the configuration files for [datasets](datasets/config.json) and [CLIP checkpoints](checkpoints/config.yaml) with your local paths. These config files are used by default in the following scripts.
 
 ### Object Counting
-The counting result for each image is saved in JSON format, follwing the structure:
+First, prepare your prompts in the [prompts](prompts) folder.
+
+The counting result for each image is saved in JSON format, following the structure:
 ```
 {
-    'category_name1': number1 (int),
-    'category_name2': number2 (int),
+    "category_name1": number1 (int),
+    "category_name2": number2 (int),
 }
 ```
-- Counting using asinchronous API request.
-1. Open-Vocabulary
+- For inference using API, it is recommended to perform asynchronous requests for faster results.
 ```bash
 python inference_tools/async_count.py --dataset_name dior_mini \
                                       --dataset_config datasets/config.json \
@@ -38,35 +96,47 @@ python inference_tools/async_count.py --dataset_name dior_mini \
                                       --model gpt-4o-2024-11-20 \
                                       --prompt_path prompts/dior/open_vocabulary.txt
 ```
-2. Open-Subclass
-```bash
-python inference_tools/async_count.py --dataset_name dior_mini \
-                                      --dataset_config datasets/config.json \
-                                      --base_url https://api.gpt.ge/v1/ \
-                                      --api_key sk-t4HuM9zbrn67xPn5B49c2c6353714069883944D04f4885F0 \
-                                      --model gpt-4o-2024-11-20 \
-                                      --prompt_path prompts/dior/open_subclass_means_of_transports.txt
-```
+Add --skip_existing if a request occasionally fails. The script will skip images that have already been processed.
 
-- Alternatively, use LVLM deployed locally to inference. e.g., Use `Qwen2.5-VL-7B-Instruct` to count objects.
+- Alternatively, use a locally deployed LVLM for inference. For example, use `Qwen2.5-VL-7B-Instruct` to count objects.
 ```bash
 python inference_tools/qwen_count.py --dataset_name dior_mini \
                                      --pretrained_model_name_or_path /home/zkcs/checkpoints/Qwen2.5-VL-7B-Instruct \
                                      --prompt_path prompts/dior/open_ended.txt
 ```
 
-### Generate mask proposals using SAM2.
+### Generate Mask Proposals Using SAM2
 
-The format of region (mask) proposals. follows a simple
-```bash
-python inference_tools/propose_regions.py --dataset_name dior_mini \
-                                          --dataset_config datasets/config.json \
-                                          --sam2_checkpoint ../../checkpoints/sam2/sam2_hiera_large.pt \
-                                          --sam2_cfg //home/zkcs/zyj/sam2/sam2/configs/sam2/sam2_hiera_l.yaml \
+The format of region (mask) proposals (e.g., [sam2_hiera_l.json](region_proposals/dior_mini/sam2_hiera_l.json)) follows a simple structure: The mask is stored in RLE format and can be decoded to a binary mask using the COCO API.
+```
+{
+    "img_name":{
+        "bboxes": [...
+        ],
+        "labels": [
+            "region_proposals",
+            ...
+        ],
+        "scores": [...
+        ],
+        "segmentations": [...
+        ],
+    },
+    "img_name2":{...
+    },
+    ...
+}
 ```
 
-### Mask-Label matching.
-explain coco / open_ended_coco format
+Generate mask proposals with your own checkpoint and config path:
+```bash
+python inference_tools/propose_regions.py --dataset_name dior_mini \
+                                          --sam2_checkpoint path_to_the_ckpt \
+                                          --sam2_cfg path_to_the_cfg
+```
+
+### Mask-Label Matching
+The results are saved in COCO format. For open-ended and open-subclass settings, the prediction does not have a `category_id` and instead uses the `label` field (str). See [the predictions on the dior_mini dataset under the open-ended setting](results/dior_mini/open_ended/coco_preds/gpt-4o-2024-11-20_open_ended_sam2_hiera_l_georsclip_preds_coco.json) as an example.
 
 ```bash
 # Open-Vocabulary
@@ -98,11 +168,11 @@ python inference_tools/mask_label_matching.py --dataset_name dior_mini \
 ```
 
 ## Evaluation
-The IoU threshold to determine whether a predicted box/mask is TP is set at 0.5.
+The IoU threshold to determine whether a predicted box/mask is a true positive (TP) is set at 0.5.
 
 ### Evaluating Object Counting
-Object counting can be evaluated via counting results, or via detection/segmentation predictions.
-- Use counting results
+Object counting can be evaluated either via counting results or via detection/segmentation predictions.
+- Evaluate using counting results:
 ```bash
 # Open-Vocabulary
 python evaluating_tools/eval_counting.py --count_dir object_counts/dior_mini/gpt-4o-2024-11-20_open_vocabulary \
@@ -120,7 +190,7 @@ python evaluating_tools/eval_counting.py --count_dir object_counts/dior_mini/gpt
                                          --setting open_subclass \
                                          --extra_classes means_of_transport
 ```
-- Use recognition results
+- Evaluate using recognition results:
 ```bash
 # Open-Vocabulary
 python evaluating_tools/eval_counting.py --coco_pred_path results/dior_mini/open_vocabulary/coco_preds/gpt-4o-2024-11-20_open_vocabulary_sam2_hiera_l_georsclip_preds_coco.json \
@@ -146,31 +216,30 @@ python evaluating_tools/eval_proposal_recall.py --mask_proposal region_proposals
 ```
 
 ### Evaluating Object Detection and Segmentation
-1. Open-Vocabulary setting.
-```
+#### Evaluating Confidence-Free Methods
+```bash
+# Open-Vocabulary
 python evaluating_tools/eval_recognition.py --predictions ./results/dior_mini/open_vocabulary/coco_preds/gpt-4o-2024-11-20_open_vocabulary_sam2_hiera_l_georsclip_coco_results.json \
                                             --dataset_name dior_mini \
                                             --setting open_vocabulary \
                                             --extra_class unseen_classes
-```
 
-2. Open-Ended setting.
-```
+# Open-Ended
 python evaluating_tools/eval_recognition.py --predictions /home/zkcs/zyj/label-engine/results/dior/osd/coco_preds/gpt-4o-2024-11-20_transports_visible_sam2-con0.75_georsclip_raw.json \
                                             --dataset_name dior_val \
                                             --setting open_ended
-```
 
-3. Open-Subclass setting.
-```
+# Open-Subclass
 python evaluating_tools/eval_recognition.py --predictions /home/zkcs/zyj/label-engine/results/dior/osd/coco_preds/gpt-4o-2024-11-20_transports_visible_sam2-con0.75_georsclip_raw.json \
                                             --dataset_name dior_val \
                                             --setting open_subclass \
                                             --extra_class means_of_transport
 ```
 
-### Evaluating Predictions with Confidential Score
-To evaluate predictions with confidential scores, when the the confidence threshold is swept from 0 to 1 (step 0.02), the threshold maximizing mF1 across categories is selected, and the corresponding cusp score is reported. e.g.,
+#### Evaluating Confidence-Based Methods
+To evaluate methods with confidence scores, the confidence threshold is swept from 0 to 1 (step 0.02). The threshold maximizing mF1 across categories is selected, and the corresponding cusp score is reported.
+
+Add `--score_sweeping`:
 ```
 python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open_vocabulary/coco_preds/gpt-4o-2024-11-20_open_vocabulary_sam2_hiera_l_georsclip_preds_coco.json \
                                             --dataset_name dior_mini \
@@ -178,4 +247,3 @@ python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open
                                             --extra_class means_of_transport \
                                             --score_sweeping
 ```
-
