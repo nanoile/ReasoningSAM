@@ -8,6 +8,7 @@ from torchvision import transforms
 import pulp
 import open_clip
 import time
+import os
 
 
 def get_preprocess_rs5m(image_resolution=224):
@@ -36,6 +37,10 @@ def init_clip_model(clip_model, device='cuda:0', ckpt_path=None):
     """
     if ckpt_path is None:
         raise ValueError(f"ckpt_path is None for {clip_model}")
+    # check if ckpt_path exists
+    if not os.path.exists(ckpt_path):
+        raise FileNotFoundError(f"Checkpoint file not found at {os.path.abspath(ckpt_path)}")
+    
     if clip_model == 'dfn2b':
         # ViT-L/14 (DFN)
         model_name = 'ViT-L-14'  # ('ViT-L-14', 'dfn2b_s39b'),
