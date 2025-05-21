@@ -54,7 +54,7 @@ huggingface-cli download Qwen/Qwen2.5-VL-7B-Instruct \
 
 - CLIP Model
   - [DFN2B-CLIP-ViT-L-14-39B](https://huggingface.co/apple/DFN2B-CLIP-ViT-L-14-39B/resolve/main/open_clip_pytorch_model.bin?download=true)
-  - [GeoRSCLIP-ViT-L-14](https://huggingface.co/Zilun/GeoRSCLIP/resolve/main/ckpt/RS5M_ViT-L-14-336.pt?download=true)
+  - [GeoRSCLIP-ViT-L-14](https://huggingface.co/Zilun/GeoRSCLIP/resolve/main/ckpt/RS5M_ViT-L-14.pt?download=true)
   - [GeoRSCLIP-ViT-B-32](https://huggingface.co/Zilun/GeoRSCLIP/resolve/main/ckpt/RS5M_ViT-B-32.pt?download=true)
   - [SkyCLIP-ViT-L-14](https://opendatasharing.s3.us-west-2.amazonaws.com/SkyScript/ckpt/SkyCLIP_ViT_L14_top30pct_filtered_by_CLIP_laion_RS.zip)
   - [SkyCLIP-ViT-B-32](https://opendatasharing.s3.us-west-2.amazonaws.com/SkyScript/ckpt/SkyCLIP_ViT_B32_top50pct.zip)
@@ -84,7 +84,7 @@ print(f'response: \n{instruct_sam.response}')
 >>> }
 ```
 
-```
+```python
 instruct_sam.segment_anything(mask_generator, max_masks=200)
 instruct_sam.calculate_pred_text_features(model, tokenizer, use_vocab=False)
 instruct_sam.match_boxes_and_labels(model, preprocess, show_similarities=True)
@@ -120,7 +120,7 @@ Add --skip_existing if a request occasionally fails. The script will skip images
 - Alternatively, use a locally deployed LVLM for inference. For example, use `Qwen2.5-VL-7B-Instruct` to count objects.
 ```bash
 python inference_tools/qwen_count.py --dataset_name dior_mini \
-                                     --pretrained_model_name_or_path /home/zkcs/checkpoints/Qwen2.5-VL-7B-Instruct \
+                                     --pretrained_model_name_or_path ./checkpoints/Qwen2.5-VL-7B-Instruct \
                                      --prompt_path prompts/dior/open_ended.txt
 ```
 
@@ -147,7 +147,7 @@ The format of region (mask) proposals (e.g., [sam2_hiera_l.json](region_proposal
 }
 ```
 
-Generate mask proposals with your own checkpoint and config path:
+Generate mask proposals with your own checkpoint and config path (Please add '/' before the absolute cfg path):
 ```bash
 python inference_tools/propose_regions.py --dataset_name dior_mini \
                                           --sam2_checkpoint path_to_the_ckpt \
@@ -229,7 +229,7 @@ python evaluating_tools/eval_counting.py --coco_pred_path results/dior_mini/open
 ```
 
 ### Evaluating Recall of Mask Proposals
-```
+```bash
 python evaluating_tools/eval_proposal_recall.py --mask_proposal region_proposals/dior_mini/sam2_hiera_l.json
                                                 --dataset_name dior_mini
 ```
@@ -238,19 +238,19 @@ python evaluating_tools/eval_proposal_recall.py --mask_proposal region_proposals
 #### Evaluating Confidence-Free Methods
 ```bash
 # Open-Vocabulary
-python evaluating_tools/eval_recognition.py --predictions ./results/dior_mini/open_vocabulary/coco_preds/gpt-4o-2024-11-20_open_vocabulary_sam2_hiera_l_georsclip_coco_results.json \
+python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open_vocabulary/coco_preds/gpt-4o-2024-11-20_open_vocabulary_sam2_hiera_l_georsclip_preds_coco.json \
                                             --dataset_name dior_mini \
                                             --setting open_vocabulary \
                                             --extra_class unseen_classes
 
 # Open-Ended
-python evaluating_tools/eval_recognition.py --predictions /home/zkcs/zyj/label-engine/results/dior/osd/coco_preds/gpt-4o-2024-11-20_transports_visible_sam2-con0.75_georsclip_raw.json \
-                                            --dataset_name dior_val \
+python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open_ended/coco_preds/gpt-4o-2024-11-20_open_ended_sam2_hiera_l_georsclip_preds_coco.json \
+                                            --dataset_name dior_mini \
                                             --setting open_ended
 
 # Open-Subclass
-python evaluating_tools/eval_recognition.py --predictions /home/zkcs/zyj/label-engine/results/dior/osd/coco_preds/gpt-4o-2024-11-20_transports_visible_sam2-con0.75_georsclip_raw.json \
-                                            --dataset_name dior_val \
+python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open_subclass/coco_preds/gpt-4o-2024-11-20_open_subclass_means_of_transports_sam2_hiera_l_georsclip_preds_coco.json \
+                                            --dataset_name dior_mini \
                                             --setting open_subclass \
                                             --extra_class means_of_transport
 ```
@@ -259,7 +259,7 @@ python evaluating_tools/eval_recognition.py --predictions /home/zkcs/zyj/label-e
 To evaluate methods with confidence scores, the confidence threshold is swept from 0 to 1 (step 0.02). The threshold maximizing mF1 across categories is selected, and the corresponding cusp score is reported.
 
 Add `--score_sweeping`:
-```
+```bash
 python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open_vocabulary/coco_preds/gpt-4o-2024-11-20_open_vocabulary_sam2_hiera_l_georsclip_preds_coco.json \
                                             --dataset_name dior_mini \
                                             --setting open_subclass \
