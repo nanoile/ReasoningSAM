@@ -2,3 +2,5 @@ __pycache__
 failed_requests.txt
 **/*.pdf
 log
+test_command.md
+**.txt

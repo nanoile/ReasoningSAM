@@ -255,6 +255,11 @@ python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open
                                             --extra_class means_of_transport
 ```
 
+python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open_subclass/coco_preds/gpt-4o-2024-11-20_open_subclass_means_of_transports_sam2_hiera_l_georsclip_preds_coco.json \
+                                            --dataset_name dior_mini \
+                                            --setting open_subclass \
+                                            --extra_class means_of_transport
+
 #### Evaluating Confidence-Based Methods
 To evaluate methods with confidence scores, the confidence threshold is swept from 0 to 1 (step 0.02). The threshold maximizing mF1 across categories is selected, and the corresponding cusp score is reported.
 
