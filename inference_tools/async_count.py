@@ -34,20 +34,20 @@ def parse_args():
     parser.add_argument(
         "--base_url",
         type=str,
-        default="https://api.gpt.ge/v1/",
+        required=True,
         help="Base URL of the API in OpenAI format.",
     )
     parser.add_argument(
         "--api_key",
+        required=True,
         type=str,
-        default="sk-RWrbcDyifkghniRiE1FeC79a9c1244F19063AaC7266c3dA2",
         help="API key.",
     )
     parser.add_argument(
         "--model",
         type=str,
         default="gpt-4o-2024-11-20",
-        help="Name of the model (e.g., 'gpt-4o-2024-11-20', 'gemini-2.5-flash-preview-04-17').",
+        help="Name of the model (e.g., 'gpt-4o-2024-11-20').",
     )
     parser.add_argument(
         "--prompt_path",
