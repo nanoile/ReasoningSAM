@@ -1,12 +1,12 @@
-# Technical Appendices for EarthInstruct and InstructSAM
+# InstructSAM: A Training-Free Framework for Instruction-Oriented Remote Sensing Object Recognition
 
 Anonymous Authors
 
-## Note
-Remove author names, API keys, and working paths when submitting anonymous code.
-
 ## Introduction
-InstructSAM is a training-free framework for Instruction-Oriented Object Counting, Detection, and Segmentation (InstructCDS). We construct EarthInstruct, an InstructCDS benchmark for remote sensing. The instructions included in EarthInstruct are open-vocabulary, open-ended, and open-subclass.
+InstructSAM is a training-free framework for Instruction-Oriented Object Counting, Detection, and Segmentation (InstructCDS). We construct EarthInstruct, an InstructCDS benchmark for remote sensing. The three instruction settings in EarthInstruct includes:
+- Open-Vocabulary:  Recognition with user-specified categories (e.g."soccer feld", "football field", "parking lot").
+- Open-Ended: Recognition of all visible objects without specifying categories.
+- Open-Subclass: Recognition of objects within a super-category.
 
 ![Task Settings](assets/task_settings.png)
 
@@ -24,7 +24,6 @@ pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorc
 ```
 2. Install `SAM2`.
 ```bash
-# git clone xxxxx
 cd InstructSAM/third_party/sam2
 pip install -e ".[notebooks]"
 ```
@@ -34,7 +33,7 @@ cd ../../
 pip install -e .
 ```
 
-### Checkpoint Download
+### Checkpoints Download
 For double-blind review, this code only references publicly available third-party resources.
 
 Download the pretrained models to the ./checkpoint directory or any preferred location.
@@ -67,8 +66,8 @@ We provide a subset of DIOR with 4 images for quickly going through the entire p
 | Dataset     | Image                                                                 | Annotation                          |
 | ----------- | -------------------------------------------------------------------- | ----------------------------------- |
 | DIOR-mini   | [datasets/dior/JPEGImages-trainval](datasets/dior/JPEGImages-trainval/)                          | [dior_mini_ann.json](datasets/dior/dior_mini_ann.json) |
-| DIOR        | [Google Drive](https://drive.google.com/drive/folders/1UdlgHk49iu6WpcJ5467iT-UqNPpx__CC) | [dior_ins_val_ann.json](datasets/dior/dior_ins_val_ann.json) |
-| NWPU-VHR-10 | [One Drive](https://1drv.ms/u/s!AmgKYzARBl5cczaUNysmiFRH4eE)         | [nwpu_ins_ann.json](datasets/nwpu/nwpu_ins_ann.json) |
+| DIOR        | [Google Drive](https://drive.google.com/drive/folders/1UdlgHk49iu6WpcJ5467iT-UqNPpx__CC) | [dior_val_ann.json](datasets/dior/dior_val_ann.json) |
+| NWPU-VHR-10 | [One Drive](https://1drv.ms/u/s!AmgKYzARBl5cczaUNysmiFRH4eE)         | [nwpu_ann.json](datasets/nwpu/nwpu_ann.json) |
 
 ## Getting Started
 See the example notebooks for more details. After initializing pretrained models, inference can be executed clearly. See [inference_demo.ipynb](demo/inference_demo.ipynb) for more details.
@@ -94,7 +93,7 @@ visualize_prediction(instruct_sam.img_array, instruct_sam.boxes_final,
 ![image](assets/inference_process.jpg)
 
 ## Inference
-Please prepare the metadata in COCO annotation format. For unannotated datasets, simply leave the 'annotations' field blank. Replace the configuration files for [datasets](datasets/config.json) and [CLIP checkpoints](checkpoints/config.yaml) with your local paths. These config files are used by default in the following scripts.
+Please prepare the metadata in COCO annotation format. For unannotated datasets, simply leave the `"annotations"` field blank. Replace the config files for [datasets](datasets/config.json) and [CLIP checkpoints](checkpoints/config.yaml) with your local paths. These config files are used by default in the following scripts.
 
 ### Object Counting
 First, prepare your prompts in the [prompts](prompts) folder.
@@ -104,9 +103,10 @@ The counting result for each image is saved in JSON format, following the struct
 {
     "category_name1": number1 (int),
     "category_name2": number2 (int),
+    ...
 }
 ```
-- For inference using API, it is recommended to perform asynchronous requests for faster results.
+- For API inference, it is recommended to perform asynchronous requests for faster results.
 ```bash
 python inference_tools/async_count.py --dataset_name dior_mini \
                                       --dataset_config datasets/config.json \
@@ -115,7 +115,7 @@ python inference_tools/async_count.py --dataset_name dior_mini \
                                       --model gpt-4o-2024-11-20 \
                                       --prompt_path prompts/dior/open_vocabulary.txt
 ```
-Add --skip_existing if a request occasionally fails. The script will skip images that have already been processed.
+Add `--skip_existing` if requests occasionally fail. The script will skip images that have already been processed.
 
 - Alternatively, use a locally deployed LVLM for inference. For example, use `Qwen2.5-VL-7B-Instruct` to count objects.
 ```bash
@@ -155,7 +155,7 @@ python inference_tools/propose_regions.py --dataset_name dior_mini \
 ```
 
 ### Mask-Label Matching
-The results are saved in COCO format. For open-ended and open-subclass settings, the prediction does not have a `category_id` and instead uses the `label` field (str). See [the predictions on the dior_mini dataset under the open-ended setting](results/dior_mini/open_ended/coco_preds/gpt-4o-2024-11-20_open_ended_sam2_hiera_l_georsclip_preds_coco.json) as an example.
+The results are saved in COCO format. For open-ended and open-subclass settings, the prediction does not have a `"category_id"` and instead uses the `"label"` field to represent its category_name. See [the predictions on dior_mini](results/dior_mini/open_ended/coco_preds/gpt-4o-2024-11-20_open_ended_sam2_hiera_l_georsclip_preds_coco.json) under open-ended setting as an example.
 
 ```bash
 # Open-Vocabulary
@@ -172,7 +172,7 @@ python inference_tools/mask_label_matching.py --dataset_name dior_mini \
                                               --dataset_config datasets/config.json \
                                               --checkpoint_config checkpoints/config.yaml \
                                               --count_dir object_counts/dior_mini/gpt-4o-2024-11-20_open_ended \
-                                              --rp_path ./region_proposals/dior_mini/sam2_hiera_l.json \
+                                              --rp_path region_proposals/dior_mini/sam2_hiera_l.json \
                                               --clip_model georsclip \
                                               --setting open_ended
 
@@ -181,7 +181,7 @@ python inference_tools/mask_label_matching.py --dataset_name dior_mini \
                                               --dataset_config datasets/config.json \
                                               --checkpoint_config checkpoints/config.yaml \
                                               --count_dir object_counts/dior_mini/gpt-4o-2024-11-20_open_subclass_means_of_transports \
-                                              --rp_path ./region_proposals/dior_mini/sam2_hiera_l.json \
+                                              --rp_path region_proposals/dior_mini/sam2_hiera_l.json \
                                               --clip_model georsclip \
                                               --setting open_subclass
 ```
@@ -255,15 +255,10 @@ python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open
                                             --extra_class means_of_transport
 ```
 
-python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open_subclass/coco_preds/gpt-4o-2024-11-20_open_subclass_means_of_transports_sam2_hiera_l_georsclip_preds_coco.json \
-                                            --dataset_name dior_mini \
-                                            --setting open_subclass \
-                                            --extra_class means_of_transport
-
 #### Evaluating Confidence-Based Methods
 To evaluate methods with confidence scores, the confidence threshold is swept from 0 to 1 (step 0.02). The threshold maximizing mF1 across categories is selected, and the corresponding cusp score is reported.
 
-Add `--score_sweeping`:
+Add `--score_sweeping` to enable this confidence threshold sweeping:
 ```bash
 python evaluating_tools/eval_recognition.py --predictions results/dior_mini/open_vocabulary/coco_preds/gpt-4o-2024-11-20_open_vocabulary_sam2_hiera_l_georsclip_preds_coco.json \
                                             --dataset_name dior_mini \
