@@ -7,14 +7,14 @@
         "sports_field": ["baseball field", "basketball court", "golf field", "ground track field", "tennis court", "stadium"]
     },
     "nwpu": {
-        "ann_path": "datasets/nwpu/annotations.json",
+        "ann_path": "datasets/nwpu/nwpu_ann.json",
         "img_dir": "datasets/nwpu/pos_images",
         "unseen_classes": ["ship", "basketball court", "harbor"],
         "means_of_transport": ["airplane", "ship", "vehicle"],
         "sports_field": ["baseball_field", "tennis_court", "basketball_court", "track_field"]
     },
     "dior_val": {
-        "ann_path": "datasets/dior/dior_ins_val.json",
+        "ann_path": "datasets/dior/dior_val_ann.json",
         "img_dir": "datasets/dior/JPEGImages-trainval",
         "unseen_classes": ["airport", "basketball court", "ground track field", "windmill"],
         "means_of_transport": ["airplane", "ship", "vehicle"],
