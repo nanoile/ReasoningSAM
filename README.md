@@ -1,6 +1,37 @@
 # InstructSAM: A Training-Free Framework for Instruction-Oriented Remote Sensing Object Recognition
 
-Anonymous Authors
+<div align="center">
+    <a href='https://voyagerxvoyagerx.github.io/' target='_blank'>Yijie Zheng</a><sup>1,2</sup>&emsp;
+    <a href='https://github.com/go-bananas-wwj' target='_blank'>Weijie Wu</a><sup>1,2</sup>&emsp;
+    <a href='https://scholar.google.com/citations?hl=en&user=TvsTun4AAAAJ' target='_blank'>Qingyun Li</a><sup>3</sup>&emsp;
+    <a href='https://huiserwang.site/' target='_blank'>Xuehui Wang</a><sup>4</sup>&emsp;
+    <a href='https://orcid.org/0009-0009-5003-0471' target='_blank'>Xu Zhou</a><sup>5</sup>&emsp;
+    <br>
+    <a href='https://orcid.org/0009-0007-1808-5347' target='_blank'>Aiai Ren</a><sup>5</sup>&emsp;
+    <a href='https://scholars.uow.edu.au/jun-shen' target='_blank'>Jun Shen</a><sup>5</sup>&emsp;
+    <a href='https://www.researchgate.net/profile/Zhao-Long-12' target='_blank'>Long Zhao</a><sup>2</sup>&emsp;
+    <a href='https://scholar.google.com/citations?hl=en&user=JGeMHTAAAAAJ&view_op=list_works&sortby=pubdate' target='_blank'>Guoqing Li</a><sup>✉️2</sup>&emsp;
+    <a href='https://yangxue0827.github.io/' target='_blank'>Xue Yang</a><sup>4</sup>&emsp;
+</div>
+
+<div align="center">
+    <sup>1</sup>University of Chinese Academy of Sciences&emsp;
+    <sup>2</sup>Aerospace Information Research Institute&emsp;
+    <sup>3</sup>Harbin Institute of Technology&emsp; <br>
+    <sup>4</sup>Shanghai Jiao Tong University&emsp;
+    <sup>5</sup>University of Wollongong&emsp;
+</div>
+
+
+<div>
+    <h4 align="center">
+        • <a href="https://github.com/VoyagerXvoyagerx/InstructSAM" target='_blank'>[Project]</a>
+        • <a href="https://github.com/VoyagerXvoyagerx/InstructSAM" target='_blank'>[arXiv]</a>
+        • <a href="https://colab.research.google.com/drive/1Ya7h04ZRPuHv3b934VoGJRMI0QpkH2oo?usp=sharing" target='_blank'>[Colab]</a> •
+    </h4>
+</div>
+
+
 
 ## Introduction
 InstructSAM is a training-free framework for Instruction-Oriented Object Counting, Detection, and Segmentation (InstructCDS). We construct EarthInstruct, an InstructCDS benchmark for remote sensing. The three instruction settings in EarthInstruct includes:
@@ -70,7 +101,9 @@ We provide a subset of DIOR with 4 images for quickly going through the entire p
 | NWPU-VHR-10 | [One Drive](https://1drv.ms/u/s!AmgKYzARBl5cczaUNysmiFRH4eE)         | [nwpu_ann.json](datasets/nwpu/nwpu_ann.json) |
 
 ## Getting Started
-See the example notebooks for more details. After initializing pretrained models, inference can be executed clearly. See [inference_demo.ipynb](demo/inference_demo.ipynb) for more details.
+See the example notebooks for more details. After initializing pretrained models, inference can be executed clearly. See [inference_demo.ipynb](demo/inference_demo.ipynb) or <a target="_blank" href="https://colab.research.google.com/drive/1Ya7h04ZRPuHv3b934VoGJRMI0QpkH2oo?usp=sharing">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>for more details.
 ```python
 instruct_sam = InstructSAM()
 instruct_sam.count_objects(prompt, gpt_model="gpt-4o-2024-11-20", json_output=True)
