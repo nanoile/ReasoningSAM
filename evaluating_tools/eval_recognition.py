@@ -130,16 +130,16 @@ if __name__ == '__main__':
 
     print('## Evaluating box AP and F1 ##')
     box_metrics = evaluate_ap_f1(anns_coco, coco_predictions, iouType='bbox',
-                                 unseen=extra_classes, save_path=save_results_path_bbox, print_result=False)
-    print(
-        f"mF1_all: {box_metrics['mF1']:.1f}, mF1_{args.extra_classes}: {box_metrics['mF1_unseen']:.1f}")
+                                 unseen=extra_classes, save_path=save_results_path_bbox, print_result=True)
+    # print(
+    #     f"mF1_all: {box_metrics['mF1']:.1f}, mF1_{args.extra_classes}: {box_metrics['mF1_unseen']:.1f}")
 
     if mask_eval:
         print('\n\n## Evaluating mask AP and F1 ##')
         mask_metrics = evaluate_ap_f1(anns_coco, coco_predictions, iouType='segm',
-                                      unseen=extra_classes, save_path=save_results_path_segm, print_result=False)
-        print(
-            f"mF1_all: {mask_metrics['mF1']:.1f}, mF1_{args.extra_classes}: {mask_metrics['mF1_unseen']:.1f}")
+                                      unseen=extra_classes, save_path=save_results_path_segm, print_result=True)
+        # print(
+        #     f"mF1_all: {mask_metrics['mF1']:.1f}, mF1_{args.extra_classes}: {mask_metrics['mF1_unseen']:.1f}")
 
         if args.eval_mIoU:
             print('\n\n## Evaluating mIoU ##')
