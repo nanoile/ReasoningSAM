@@ -402,13 +402,16 @@ def calculate_f1_scores(anns, coco_preds, iouType='bbox', unseen=None, iou_thres
 
     # Calculate mean F1 score
     mean_f1_score = np.mean(
-        [metrics['f1'] for metrics in class_metrics.values()]) if class_metrics else 0.0
+        [metrics['f1'] for metrics in class_metrics.values() if metrics['tp']+metrics['fn'] > 0]) if class_metrics else 0.0
 
     # Calculate mean F1 for unseen classes
     mean_f1_unseen = None
     if unseen:
-        unseen_f1_scores = [class_metrics.get(cat_name, {'f1': 0.0})[
-            'f1'] for cat_name in unseen]
+        unseen_f1_scores = [
+            class_metrics[cat_name]['f1']
+            for cat_name in unseen
+            if cat_name in class_metrics and (class_metrics[cat_name]['tp'] + class_metrics[cat_name]['fn'] > 0)
+        ]
         mean_f1_unseen = np.mean(unseen_f1_scores) if unseen_f1_scores else 0.0
 
     return class_metrics, mean_f1_score, mean_f1_unseen
@@ -453,12 +456,6 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
         coco_eval.accumulate()
         coco_eval.summarize()
 
-    # print("IoU thresholds before eval:", coco_eval.params.iouThrs)
-    # coco_eval.evaluate()
-    # coco_eval.accumulate()
-    # print("IoU thresholds before summarize:", coco_eval.params.iouThrs)
-    # coco_eval.summarize()
-
     # Extract per-class AP50
     class_ap = {}
     cat_ids = [cat['id'] for cat in ann['categories']]
@@ -468,7 +465,7 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
         for idx, cat_id in enumerate(coco_eval.params.catIds):
             ap = coco_eval.eval['precision'][0, :, idx, 0, -1].mean()
             if not np.isnan(ap):
-                class_ap[cat_names[cat_id]] = ap
+                class_ap[cat_names[cat_id]] = max(ap, 0.0)
             else:
                 class_ap[cat_names[cat_id]] = 0.0
     else:
@@ -476,18 +473,20 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
         for cat in ann['categories']:
             class_ap[cat['name']] = 0.0
 
-    # Calculate mAP50 for unseen classes
-    if unseen is not None:
-        unseen_cat_ids = [cat['id']
-                          for cat in ann['categories'] if cat['name'] in unseen]
-        unseen_aps = [class_ap[cat_names[cat_id]]
-                      for cat_id in unseen_cat_ids if cat_id in cat_names]
-        map50_unseen = np.mean(unseen_aps) if unseen_aps else 0.0
-
     # Calculate F1 scores and detailed metrics
     class_metrics, mean_f1_score, mean_f1_unseen = calculate_f1_scores(
         ann, coco_predictions, iouType=iouType, unseen=unseen, iou_threshold=0.5
     )
+
+    # Calculate mAP50 for unseen classes
+    if unseen is not None:
+        unseen_aps = [
+            class_ap[cat_name]
+            for cat_name in unseen
+            if cat_name in class_ap
+            and (class_metrics[cat_name]['tp'] + class_metrics[cat_name]['fn'] > 0)
+        ]
+        map50_unseen = np.mean(unseen_aps) if unseen_aps else 0.0
 
     # Prepare table in order of ann['categories']
     table_data = []
@@ -520,8 +519,8 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
 
     if unseen is not None:
         summary_str = (
-            f"mAP50: {ap50_all * 100:.1f}\n"
-            f"mAP50 unseen: {map50_unseen * 100:.1f}\n"
+            f"mAPnc50: {ap50_all * 100:.1f}\n"
+            f"mAPnc50 unseen: {map50_unseen * 100:.1f}\n"
             f"mF1: {mean_f1_score * 100:.1f}\n"
             f"mF1 unseen: {mean_f1_unseen * 100:.1f}"
         )
@@ -529,7 +528,7 @@ def evaluate_ap_f1(ann, coco_predictions, iouType='segm', unseen=None, save_path
         return_summary['mF1_unseen'] = mean_f1_unseen*100
     else:
         summary_str = (
-            f"mAP50: {ap50_all * 100:.1f}\n"
+            f"mAPnc50: {ap50_all * 100:.1f}\n"
             f"mF1: {mean_f1_score * 100:.1f}"
         )
 
