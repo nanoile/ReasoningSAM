@@ -22,16 +22,13 @@
     <sup>5</sup>University of Wollongong&emsp;
 </div>
 
-
 <div>
     <h4 align="center">
-        • <a href="VoyagerXvoyagerx.github.io/InstructSAM" target='_blank'>[Project]</a>
+        • <a href="http://VoyagerXvoyagerx.github.io/InstructSAM" target='_blank'>[Project]</a>
         • <a href="https://arxiv.org/pdf/2505.15818" target='_blank'>[arXiv]</a>
         • <a href="https://colab.research.google.com/drive/1Ya7h04ZRPuHv3b934VoGJRMI0QpkH2oo?usp=sharing" target='_blank'>[Colab]</a> •
     </h4>
 </div>
-
-
 
 ## Introduction
 InstructSAM is a training-free framework for Instruction-Oriented Object Counting, Detection, and Segmentation (InstructCDS). We construct EarthInstruct, an InstructCDS benchmark for remote sensing. The three instruction settings in EarthInstruct includes:
