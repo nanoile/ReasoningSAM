@@ -16,8 +16,8 @@
 
 <div align="center">
     <sup>1</sup>University of Chinese Academy of Sciences&emsp;
-    <sup>2</sup>Aerospace Information Research Institute&emsp;
-    <sup>3</sup>Harbin Institute of Technology&emsp; <br>
+    <sup>2</sup>Aerospace Information Research Institute&emsp; <br>
+    <sup>3</sup>Harbin Institute of Technology&emsp; 
     <sup>4</sup>Shanghai Jiao Tong University&emsp;
     <sup>5</sup>University of Wollongong&emsp;
 </div>
@@ -25,8 +25,8 @@
 
 <div>
     <h4 align="center">
-        • <a href="https://github.com/VoyagerXvoyagerx/InstructSAM" target='_blank'>[Project]</a>
-        • <a href="https://github.com/VoyagerXvoyagerx/InstructSAM" target='_blank'>[arXiv]</a>
+        • <a href="VoyagerXvoyagerx.github.io/InstructSAM" target='_blank'>[Project]</a>
+        • <a href="https://arxiv.org/pdf/2505.15818" target='_blank'>[arXiv]</a>
         • <a href="https://colab.research.google.com/drive/1Ya7h04ZRPuHv3b934VoGJRMI0QpkH2oo?usp=sharing" target='_blank'>[Colab]</a> •
     </h4>
 </div>
