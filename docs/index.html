@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InstructSAM</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -24,16 +25,49 @@
         .links {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             margin: 20px 0;
+            flex-wrap: wrap;
         }
         .links a {
             text-decoration: none;
-            color: #0366d6;
+            color: white;
             font-weight: bold;
+            background-color: #333;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s ease;
+            font-size: 14px;
         }
         .links a:hover {
-            text-decoration: underline;
+            background-color: #555;
+        }
+        .links a.arxiv {
+            background-color: #b31b1b;
+        }
+        .links a.arxiv:hover {
+            background-color: #d42c2c;
+        }
+        .links a.github {
+            background-color: #333;
+        }
+        .links a.github:hover {
+            background-color: #555;
+        }
+        .links a.colab {
+            background-color: #f9ab00;
+        }
+        .links a.colab:hover {
+            background-color: #ffc107;
+        }
+        .links a.model {
+            background-color: #6f42c1;
+        }
+        .links a.model:hover {
+            background-color: #8a63d2;
         }
         .content {
             margin-top: 30px;
@@ -46,17 +80,49 @@
 </head>
 <body>
     <header>
-        <h1>InstructSAM</h1>
-        <p>A Training-Free Framework for Instruction-Oriented Remote Sensing Object Recognition</p>
-        <div class="links">
-            <a href="https://github.com/VoyagerXvoyagerx/InstructSAM" target="_blank">GitHub</a>
-            <a href="https://arxiv.org/" target="_blank">arXiv</a>
-            <a href="https://colab.research.google.com/drive/1Ya7h04ZRPuHv3b934VoGJRMI0QpkH2oo?usp=sharing" target="_blank">
-                <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" class="badge">
-            </a>
-        </div>
+        <h1>InstructSAM: A Training-Free Framework for Instruction-Oriented Remote Sensing Object Recognition</h1>
+        <p></p>
+
     </header>
+    <div align="center">
+        <a href='https://voyagerxvoyagerx.github.io/' target='_blank'>Yijie Zheng</a><sup>1,2</sup>&emsp;
+        <a href='https://github.com/go-bananas-wwj' target='_blank'>Weijie Wu</a><sup>1,2</sup>&emsp;
+        <a href='https://scholar.google.com/citations?hl=en&user=TvsTun4AAAAJ' target='_blank'>Qingyun Li</a><sup>3</sup>&emsp;
+        <a href='https://huiserwang.site/' target='_blank'>Xuehui Wang</a><sup>4</sup>&emsp;
+        <a href='https://orcid.org/0009-0009-5003-0471' target='_blank'>Xu Zhou</a><sup>5</sup>&emsp;
+        <br>
+        <a href='https://orcid.org/0009-0007-1808-5347' target='_blank'>Aiai Ren</a><sup>5</sup>&emsp;
+        <a href='https://scholars.uow.edu.au/jun-shen' target='_blank'>Jun Shen</a><sup>5</sup>&emsp;
+        <a href='https://www.researchgate.net/profile/Zhao-Long-12' target='_blank'>Long Zhao</a><sup>2</sup>&emsp;
+        <a href='https://scholar.google.com/citations?hl=en&user=JGeMHTAAAAAJ&view_op=list_works&sortby=pubdate' target='_blank'>Guoqing Li</a><sup>✉️2</sup>&emsp;
+        <a href='https://yangxue0827.github.io/' target='_blank'>Xue Yang</a><sup>4</sup>&emsp;
+    </div>
     
+    <div align="center">
+        <sup>1</sup>University of Chinese Academy of Sciences&emsp;
+        <sup>2</sup>Aerospace Information Research Institute&emsp; <br>
+        <sup>3</sup>Harbin Institute of Technology&emsp; 
+        <sup>4</sup>Shanghai Jiao Tong University&emsp;
+        <sup>5</sup>University of Wollongong&emsp;
+    </div>
+    <div class="links">
+        <a href="http://arxiv.org/abs/2505.15818" target="_blank" class="arxiv">
+            <i class="fas fa-file-alt"></i>
+            arXiv
+        </a>
+        <a href="https://github.com/VoyagerXvoyagerx/InstructSAM" target="_blank" class="github">
+            <i class="fab fa-github"></i>
+            Code
+        </a>
+        <a href="https://colab.research.google.com/drive/1Ya7h04ZRPuHv3b934VoGJRMI0QpkH2oo?usp=sharing" target="_blank" class="colab">
+            <i class="fas fa-play"></i>
+            Colab
+        </a>
+        <!-- <a href="https://colab.research.google.com/drive/1Ya7h04ZRPuHv3b934VoGJRMI0QpkH2oo?usp=sharing" target="_blank" class="github">
+            <i class="fas fa-play"></i>
+            <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" > -->
+            
+    </div>
     <div class="content">
         <h2>About InstructSAM</h2>
         <p>Instruction-based object recognition has emerged as a powerful paradigm in computer vision. However, the lack of semantically diverse training data has limited zero-shot performance in specialized domains like remote sensing.
@@ -157,6 +223,13 @@
         
         <h2>Getting Started</h2>
         <p>Ready to try InstructSAM? Check out our <a href="https://github.com/VoyagerXvoyagerx/InstructSAM/blob/main/README.md" target="_blank">README</a> for detailed installation and usage instructions.</p>
+        <h2>Citation</h2>
+        <pre><code>@article{zheng2025instructsam,
+    title={InstructSAM: A Training-Free Framework for Instruction-Oriented Remote Sensing Object Recognition}, 
+    author={Yijie Zheng and Weijie Wu and Qingyun Li and Xuehui Wang and Xu Zhou and Aiai Ren and Jun Shen and Long Zhao and Guoqing Li and Xue Yang},
+    year={2025},
+    journal={arXiv preprint arXiv:2505.15818},
+}</code></pre>
     </div>
 </body>
 </html> 
