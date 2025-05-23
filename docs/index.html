@@ -56,19 +56,107 @@
             </a>
         </div>
     </header>
+    
     <div class="content">
-        <h2>About</h2>
-        <p>InstructSAM is a training-free framework for Instruction-Oriented Object Counting, Detection, and Segmentation (InstructCDS). It addresses remote sensing tasks with open-vocabulary, open-ended, and open-subclass settings.</p>
+        <h2>About InstructSAM</h2>
+        <p>Instruction-based object recognition has emerged as a powerful paradigm in computer vision. However, the lack of semantically diverse training data has limited zero-shot performance in specialized domains like remote sensing.
+            InstructSAM introduces a training-free framework for Instruction-Oriented Object Counting, Detection, and Segmentation (InstructCDS) tasks across open-vocabulary, open-ended, and open-subclass settings.
+            By reformulating object detection as a counting-constrained mask-label matching problem, it enables confidence-free object recognition and achieves near-constant inference time regardless of object counts.</p>
         
-        <h2>Features</h2>
+        <h2>InstructCDS Tasks</h2>
+        <p>The EarthInstruct benchmark introduces three challenging instruction settings:</p>
         <ul>
-            <li>Training-free framework for remote sensing object recognition.</li>
-            <li>Supports open-vocabulary, open-ended, and open-subclass settings.</li>
-            <li>Integration with SAM2 and CLIP models.</li>
+            <li><strong>Open-Vocabulary:</strong> Recognition with user-specified categories (e.g., "soccer field", "football field", "parking lot").</li>
+            <li><strong>Open-Ended:</strong> Recognition of all visible objects without specifying categories.</li>
+            <li><strong>Open-Subclass:</strong> Recognition of objects within a super-category.</li>
+        </ul>
+
+        <img src="../assets/task_settings.png" alt="Task Settings" style="width: 100%;">
+
+        <h2>EarthInstruct Benchmark</h2>
+        <p>We constructed EarthInstruct to benchmark InstructCDS capabilities in earth observation scenarios.
+        Beyond the basic three settings, we employ dataset-specific prompts that guide LVLMs to
+        recognize objects according to specific annotation rules, addressing versatile user requirements and real-world dataset biases (examples shown below).</p>
+        <img src="./assets/dataset_bias.png" alt="Dataset bias" style="width: 100%;">
+        
+        
+        <h2>InstructSAM Framework</h2>
+        <img src="../assets/framework.png" alt="InstructSAM Framework" style="width: 100%;">
+        <p>To tackle these challenges, we decompose instruction-oriented object detection into three tractable steps:</p>
+        
+        <p><strong>Step 1: Instruction-Oriented Object Counting</strong><br>
+        A large vision-language model (LVLM) interprets user instructions and predicts <strong>object categories</strong> and <strong>counts</strong>.</p>
+        
+        <p><strong>Step 2: Class-Agnostic Mask Generation</strong><br>
+        SAM2 automatically generates high-quality <strong>mask proposals</strong> in parallel with instruction processing.</p>
+        
+        <p><strong>Step 3: Counting-Constrained Matching</strong><br>
+        A remote sensing CLIP model computes <strong>semantic similarity</strong> between predicted categories and mask proposals. We formulate object detection and segmentation as a <strong>mask-label matching</strong> problem, integrating semantic similarity with global counting constraints.</p>
+        
+        <p>By combining three powerful foundation models, InstructSAM achieves superior performance across multiple tasks, outperforming both generic and remote sensing-specific models trained on large-scale datasets.</p>
+        
+        <img src="../assets/inference_process.jpg" alt="InstructSAM Inference Process" style="width: 100%;">
+        <div style="text-align: center;">Visualization of the InstructSAM inference process.</div> <br>
+
+        <img src="./assets/results_main.png" alt="Results Visualization" style="width: 100%;">
+        <div style="text-align: center;">Qualitative results across different settings.</div> <br>
+        
+        <h2>Key Results & Performance Highlights</h2>
+        <ul>
+            <li><strong>State-of-the-Art Performance:</strong> InstructSAM matches or surpasses specialized baselines in object counting, open-vocabulary, and open-ended object recognition tasks on the EarthInstruct benchmark.</li>
+            <li><strong>Training-Free & Confidence-Free:</strong> Requires no task-specific training or fine-tuning, and its matching process eliminates the need for confidence threshold filtering.</li>
+            <li><strong>Efficient Inference:</strong> Achieves near-constant inference time regardless of the number of objects, significantly reducing output tokens and overall runtime compared to direct generation approaches.</li>
+            <li><strong>Strong Generalization:</strong> Demonstrates generalization to natural images when equipped with generic CLIP models.</li>
         </ul>
         
-        <h2>Quick Start</h2>
-        <p>See the <a href="https://github.com/VoyagerXvoyagerx/InstructSAM/blob/main/README.md" target="_blank">README</a> for installation and usage instructions.</p>
+        <h3>Open-Vocabulary Results</h3>
+        <div style="text-align: center;"><img src="./assets/table_1.png" alt="Open-Vocabulary Results" style="width: 80%;"></div>
+
+        <h3>Open-Ended Results</h3>
+        <div style="text-align: center;"><img src="./assets/table_2.png" alt="Open-Ended Results" style="width: 65%;"></div>
+        
+        <h3>Open-Subclass Results</h3>
+        <img src="./assets/table_3.png" alt="Open-Subclass Results" style="width: 100%;">
+
+        <h3>Inference Time Analysis</h3>
+        <div style="display: flex; align-items: center; gap: 20px; margin: 20px 0;">
+            <div style="flex: 0 0 50%;">
+                <img src="./assets/inference_time.png" alt="Inference Time Comparison" style="width: 100%;">
+            </div>
+            <div style="flex: 1; font-size: 16px; line-height: 1.5;">
+                InstructSAM exhibits nearly constant inference speed, in contrast to other approaches whose runtime increases linearly with object count. 
+                Unlike methods that represent bounding boxes as natural language tokens, InstructSAM reduces output tokens by 89% and total inference time by 32% compared to Qwen2.5-VL.
+                This advantage becomes more pronounced as model size scales up, highlighting the efficiency of our framework.
+            </div>
+        </div>
+
+        <h3>Generalization to Natural Images</h3>
+        <div style="text-align: center;"><img src="./assets/natural_image.png" alt="Natural Image Results" style="width: 70%;"></div>
+        <div style="text-align: center;">When equipped with generic CLIP, InstructSAM can effectively recognize objects in natural images.</div>
+        
+        
+        <h2>Analysis & Discussion</h2>
+        <h3>The Power of Foundation Models and Prompt Engineering</h3>
+        <div style="display: flex; align-items: center; gap: 20px; margin: 20px 0;">
+            <div style="flex: 0 0 50%;">
+                <img src="./assets/table_4.png" alt="Counting Performance Table" style="width: 100%;"> * The Faster-RCNN is trained on DIOR training set.
+            </div>
+            <div style="flex: 1; font-size: 16px; line-height: 1.5;">
+                Providing GPT-4o with detailed annotation rules enables it to count objects as accurately as a close-set trained Faster-RCNN! This demonstrates the importance of proper prompt design in leveraging foundation model capabilities.
+            </div>
+        </div>
+        
+        <h3>Confidence-Free vs. Confidence-Based Approaches</h3>
+        <div style="text-align: center;"><img src="./assets/threshold.png" alt="Threshold Sensitivity Analysis" style="width: 70%;"></div>
+        <p>Traditional detectors rely on confidence scores and thresholds, which can be sensitive and difficult to tune, especially in zero-shot scenarios.
+            InstructSAM's counting-constrained matching approach provides a robust alternative by dynamically adjusting assignments based on predicted counts from the LVLM.</p>
+
+        <h3>Limitations & Future Directions</h3>
+        <p>InstructSAM's performance depends on the capabilities of the underlying foundation models (LVLM, SAM2, CLIP).
+            Future advancements in these models, particularly those trained on more semantically diverse remote sensing data, will likely enhance InstructSAM's capabilities further.</p>
+        
+        <h2>Getting Started</h2>
+        <p>Ready to try InstructSAM? Check out our <a href="https://github.com/VoyagerXvoyagerx/InstructSAM/blob/main/README.md" target="_blank">README</a> for detailed installation and usage instructions.</p>
     </div>
 </body>
 </html> 
