@@ -3,5 +3,5 @@ failed_requests.txt
 **/*.pdf
 log
 test_command.md
-**.txt
 **.tex
+**.txt
