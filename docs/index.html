@@ -125,11 +125,11 @@
     </div>
     <div class="content">
         <h2>About InstructSAM</h2>
-        <p>Instruction-based object recognition has emerged as a powerful paradigm in computer vision. However, the lack of semantically diverse training data has limited zero-shot performance in specialized domains like remote sensing.
+        <p>Instruction-based object recognition has emerged as a powerful paradigm in computer vision. However, the lack of semantically diverse training data has limited the zero-shot performance of vision-language models in remote sensing.
             InstructSAM introduces a training-free framework for Instruction-Oriented Object Counting, Detection, and Segmentation (InstructCDS) tasks across open-vocabulary, open-ended, and open-subclass settings.
             By reformulating object detection as a counting-constrained mask-label matching problem, it enables confidence-free object recognition and achieves near-constant inference time regardless of object counts.</p>
         
-        <h2>InstructCDS Tasks</h2>
+        <h2>InstructCDS Tasks & EarthInstruct Benchmark</h2>
         <p>The EarthInstruct benchmark introduces three challenging instruction settings:</p>
         <ul>
             <li><strong>Open-Vocabulary:</strong> Recognition with user-specified categories (e.g., "soccer field", "football field", "parking lot").</li>
@@ -139,8 +139,7 @@
 
         <img src="./assets/task_settings.png" alt="Task Settings" style="width: 100%;">
 
-        <h2>EarthInstruct Benchmark</h2>
-        <p>We constructed EarthInstruct to benchmark InstructCDS capabilities in earth observation scenarios.
+        <p>
         Beyond the basic three settings, we employ dataset-specific prompts that guide LVLMs to
         recognize objects according to specific annotation rules, addressing versatile user requirements and real-world dataset biases (examples shown below).</p>
         <img src="./assets/dataset_bias.png" alt="Dataset bias" style="width: 100%;">
@@ -148,7 +147,7 @@
         
         <h2>InstructSAM Framework</h2>
         <img src="./assets/framework.png" alt="InstructSAM Framework" style="width: 100%;">
-        <p>To tackle these challenges, we decompose instruction-oriented object detection into three tractable steps:</p>
+        <p>To tackle the challenges of limited training data and complex user instructions, InstructSAM decomposes instruction-oriented object detection into three tractable steps:</p>
         
         <p><strong>Step 1: Instruction-Oriented Object Counting</strong><br>
         A large vision-language model (LVLM) interprets user instructions and predicts <strong>object categories</strong> and <strong>counts</strong>.</p>
@@ -157,10 +156,10 @@
         SAM2 automatically generates high-quality <strong>mask proposals</strong> in parallel with instruction processing.</p>
         
         <p><strong>Step 3: Counting-Constrained Matching</strong><br>
-        A remote sensing CLIP model computes <strong>semantic similarity</strong> between predicted categories and mask proposals. We formulate object detection and segmentation as a <strong>mask-label matching</strong> problem, integrating semantic similarity with global counting constraints.</p>
-        
-        <p>By combining three powerful foundation models, InstructSAM achieves superior performance across multiple tasks, outperforming both generic and remote sensing-specific models trained on large-scale datasets.</p>
-        
+        A remote sensing CLIP model computes <strong>semantic similarity</strong> between predicted categories and mask proposals.
+        InstructSAM formulates object detection and segmentation as a <strong>mask-label matching</strong> problem, integrating semantic similarity with global counting constraints.
+        A binary integer programming solver is used to solve the matching problem and obtain the final recognition results.</p>
+                
         <img src="./assets/inference_process.jpg" alt="InstructSAM Inference Process" style="width: 100%;">
         <div style="text-align: center;">Visualization of the InstructSAM inference process.</div> <br>
 
@@ -169,7 +168,7 @@
         
         <h2>Key Results & Performance Highlights</h2>
         <ul>
-            <li><strong>State-of-the-Art Performance:</strong> InstructSAM matches or surpasses specialized baselines in object counting, open-vocabulary, and open-ended object recognition tasks on the EarthInstruct benchmark.</li>
+            <li><strong>State-of-the-Art Performance:</strong> Matches or surpasses specialized baselines that trained on large-scale task-specific data on the EarthInstruct benchmark.</li>
             <li><strong>Training-Free & Confidence-Free:</strong> Requires no task-specific training or fine-tuning, and its matching process eliminates the need for confidence threshold filtering.</li>
             <li><strong>Efficient Inference:</strong> Achieves near-constant inference time regardless of the number of objects, significantly reducing output tokens and overall runtime compared to direct generation approaches.</li>
             <li><strong>Strong Generalization:</strong> Demonstrates generalization to natural images when equipped with generic CLIP models.</li>
