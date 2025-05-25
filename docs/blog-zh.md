@@ -33,7 +33,8 @@
 除了上述三种基本指令设定外，EarthInstruct 允许针对不同数据集设计专用提示，以指导 LVLM 根据特定标注规则识别目标，从而应对多样化的用户需求和现实世界的数据集偏差。
 
 ![数据集偏差](./assets/dataset_bias.png)
-NWPU-VHR-10 和 DIOR 数据集的标注偏差示例
+<div style="text-align: center;">NWPU-VHR-10 和 DIOR 数据集的标注偏差示例.</div> <br>
+
 
 ## InstructSAM 框架
 
@@ -48,11 +49,11 @@ NWPU-VHR-10 和 DIOR 数据集的标注偏差示例
 
 ![推理过程](./assets/inference_process.jpg)
 
-推理中间步骤可视化
+<div style="text-align: center;">推理中间步骤可视化</div> <br>
 
 ![结果可视化](./assets/results_main.png)
 
-不同指令设定下的识别结果对比
+<div style="text-align: center;">不同指令设定下的识别结果对比</div> <br>
 
 ## 关键结果与性能亮点
 本文选取 Qwen2.5-VL-7B 和 GPT-4o 作为目标计数器，SAM2 作为候选掩码生成模型，GeoRSCLIP 进行相似度计算。
@@ -62,14 +63,13 @@ NWPU-VHR-10 和 DIOR 数据集的标注偏差示例
 - **高效推理**：推理时间几乎不受目标数量的影响，显著减少了输出词元数和总运行时间。
 - **强大的泛化能力**：在配备通用 CLIP 模型时，能够有效识别自然图像中的目标。
 
-（建议调整表格大小，让每张表的字体看起来差不多大）
 ### 开放词汇识别结果
 
 ![开放词汇结果](./assets/table_1.png)
 
 ### 开放目标识别结果
 
-![开放目标结果](./assets/table_2.png)
+<img src="./assets/table_2.png" alt="开放式" style="width: 50%;">
 
 ### 开放子类别识别结果
 
@@ -77,7 +77,9 @@ NWPU-VHR-10 和 DIOR 数据集的标注偏差示例
 
 ### 推理时间分析
 
-![推理时间比较](./assets/inference_time.png)
+<img src="./assets/inference_time.png" alt="推理时间比较" style="width: 70%;">
+
+<!-- ![推理时间比较](./assets/inference_time.png) -->
 
 在开放式目标检测的设定下，InstructSAM 展现出和近乎常数（和预测的边界框数量无关）的推理时长，而其他方法的推理时间会随目标数量线性增长。与将边界框表示为自然语言词元（token）的方法不同，InstructSAM-Qwen 相比 Qwen2.5-VL 减少了 89% 的输出词元数和 32% 的总推理时间。随着模型规模的扩大，这一优势更加显著，凸显了 InstructSAM 框架的高效性。
 
@@ -91,14 +93,16 @@ InstructSAM 的基础模块可以根据使用需求灵活替换。使用通用 C
 
 ### 提示词工程
 
-![计数性能表](./assets/table_4.png)
+<img src="./assets/table_4.png" alt="计数性能表" style="width: 60%;">
+
+<!-- ![计数性能表](./assets/table_4.png) -->
 
 根据数据集的标注规则设计提示词，可以显著提高 GPT-4o 的开放词汇目标计数的性能，甚至和闭集的 Faster-RCNN 模型（使用先检测后计数的方法）相当。
 
 ### 无需置信度的方法
 
 ![阈值敏感性分析](./assets/threshold.png)
-传统检测器的输出依赖于置信度过滤。而在 OOD 场景下，一个固定的置信度的阈值很难适用于所有图像和所有类别。InstructSAM 使用计数作为约束，相比使用置信度阈值过滤低置信度预测框的方法，对不同图像和不同类别目标的适应性更强。
+传统检测器的最终预测结果往往需要使用一个固定的置信度阈值来过滤调低质量的预测框。而面对训练集分布以外的输入，一个固定的置信度的阈值无法让所有图像和所有类别的性能都达到最优。InstructSAM 使用计数作为约束，无需使用置信度阈值进行过滤，对不同图像和不同类别目标的适应性更强。
 
 ### 局限性与未来方向
 
