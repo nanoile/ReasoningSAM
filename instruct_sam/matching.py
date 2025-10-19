@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from PIL import Image
 from instruct_sam.visualize import visualize_prediction
 # from instruct_sam.visualize import CATEGORIES
 from torch.utils.data import DataLoader, TensorDataset
@@ -9,6 +10,8 @@ import pulp
 import open_clip
 import time
 import os
+
+from instruct_sam.hybrid_features import compute_hybrid_region_features
 
 
 def get_preprocess_rs5m(image_resolution=224):
@@ -265,67 +268,108 @@ def match_boxes_and_counts(image, boxes, object_cnt, text_features,
             print("Warning: gpt_predicted_classes is empty. Returning empty results.")
         return [], [], [], []  # Return empty results
 
-    # Step 2: Crop the Region Proposal and calculate the image features
-    region_features = []
-    regions = []
-    # Get the width and height of the image
-    image_width, image_height = image.size
+    # Step 2: Derive region visual features (HybridGL-style if masks available, otherwise crop fallback)
+    image_pil = image if isinstance(image, Image.Image) else Image.fromarray(image)
 
-    for box in boxes:
-        x, y, w, h = box
+    def _is_mask_like(seg):
+        if seg is None:
+            return False
+        if isinstance(seg, dict):
+            return True
+        if isinstance(seg, np.ndarray):
+            return True
+        if isinstance(seg, (list, tuple)):
+            if len(seg) == 0:
+                return False
+            # list representing bbox [x, y, w, h]
+            if len(seg) == 4 and all(isinstance(v, (int, float)) for v in seg):
+                return False
+            return True
+        return False
+    region_features = None
 
-        if x > image_width or y > image_height:
-            print(f'Warning: box {box} out of image size {image.size}')
-            x = image_width - 2
-            y = image_height - 2
-            print("---------------")
+    has_segmentations = (
+        segmentations is not None
+        and len(segmentations) == len(boxes)
+        and len(boxes) > 0
+        and _is_mask_like(segmentations[0])
+    )
+    if has_segmentations:
+        try:
+            region_features = compute_hybrid_region_features(
+                image_pil,
+                segmentations,
+                clip_model=model,
+                preprocess=preprocess,
+                device=device,
+            )
+            if region_features.shape[0] != len(boxes):
+                print("Hybrid feature extractor returned mismatched feature count; falling back to crop features.")
+                region_features = None
+        except Exception as exc:
+            print(f"Hybrid feature extraction failed ({exc}). Falling back to crop-based features.")
+            region_features = None
 
-        # Calculate the center point of the cropping box
-        center_x = x + w / 2
-        center_y = y + h / 2
+    if region_features is None or region_features.nelement() == 0:
+        crop_features = []
+        regions = []
+        image_width, image_height = image_pil.size
 
-        # Calculate the length and width of the cropping box (adjust according to crop_scale)
-        new_w = max(min_crop_width, w * crop_scale)
-        new_h = max(min_crop_width, h * crop_scale)
+        for box in boxes:
+            x, y, w, h = box
 
-        # Calculate the coordinates of the top-left and bottom-right corners of the cropping box
-        new_x1 = center_x - new_w / 2
-        new_y1 = center_y - new_h / 2
-        new_x2 = center_x + new_w / 2
-        new_y2 = center_y + new_h / 2
+            if x > image_width or y > image_height:
+                print(f'Warning: box {box} out of image size {image_pil.size}')
+                x = image_width - 2
+                y = image_height - 2
+                print("---------------")
 
-        # Ensure the cropping box does not exceed the image boundaries
-        new_x1 = max(0, new_x1)  # Left boundary
-        new_y1 = max(0, new_y1)  # Top boundary
-        new_x2 = min(image_width, new_x2)  # Right boundary
-        new_y2 = min(image_height, new_y2)  # Bottom boundary
+            # Calculate the center point of the cropping box
+            center_x = x + w / 2
+            center_y = y + h / 2
 
-        region = image.crop((new_x1, new_y1, new_x2, new_y2))
-        if isinstance(model, open_clip.model.CLIP):
-            regions.append(preprocess(region).unsqueeze(0))
-        else:
-            regions.append(preprocess(region))
+            # Calculate the length and width of the cropping box (adjust according to crop_scale)
+            new_w = max(min_crop_width, w * crop_scale)
+            new_h = max(min_crop_width, h * crop_scale)
 
-    # Concatenate all regions into a batch
-    regions_batch = torch.cat(regions, dim=0).cuda(device)  # Move to GPU
+            # Calculate the coordinates of the top-left and bottom-right corners of the cropping box
+            new_x1 = center_x - new_w / 2
+            new_y1 = center_y - new_h / 2
+            new_x2 = center_x + new_w / 2
+            new_y2 = center_y + new_h / 2
 
-    # Use DataLoader for batch inference
-    dataset = TensorDataset(regions_batch)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-    with torch.no_grad():
-        for batch in dataloader:
-            batch_regions = batch[0]  # Batch regions
+            # Ensure the cropping box does not exceed the image boundaries
+            new_x1 = max(0, new_x1)  # Left boundary
+            new_y1 = max(0, new_y1)  # Top boundary
+            new_x2 = min(image_width, new_x2)  # Right boundary
+            new_y2 = min(image_height, new_y2)  # Bottom boundary
+
+            region = image_pil.crop((new_x1, new_y1, new_x2, new_y2))
             if isinstance(model, open_clip.model.CLIP):
-                region_features_batch = model.encode_image(batch_regions)
+                regions.append(preprocess(region).unsqueeze(0))
             else:
-                region_features_batch = model.get_image_features(
-                    batch_regions)    # SigLIP
-            region_features.append(region_features_batch)
+                regions.append(preprocess(region))
 
-    # [num_boxes, feature_dim]
-    region_features = torch.cat(region_features, dim=0)
-    # Normalize each row (feature vector) to L2
-    region_features = F.normalize(region_features, p=2, dim=1)
+        if not regions:
+            return [], [], [], []
+
+        regions_batch = torch.cat(regions, dim=0).to(device)  # Move to target device
+
+        dataset = TensorDataset(regions_batch)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        with torch.no_grad():
+            for batch in dataloader:
+                batch_regions = batch[0]
+                if isinstance(model, open_clip.model.CLIP):
+                    features_batch = model.encode_image(batch_regions)
+                else:
+                    features_batch = model.get_image_features(batch_regions)  # SigLIP
+                crop_features.append(features_batch)
+
+        region_features = torch.cat(crop_features, dim=0)
+        region_features = F.normalize(region_features, p=2, dim=1)
+    else:
+        region_features = region_features.to(device)
 
     # Step 3: Calculate the similarity between Region Proposal and GPT predicted classes
     region_features, text_features = region_features.float(
